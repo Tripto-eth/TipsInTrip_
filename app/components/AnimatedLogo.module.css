@@ -1,0 +1,58 @@
+.container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  /* overflow: hidden; -> Rimossa per permettere all'aereo di arrivare da fuori! */
+}
+
+.logoT {
+  position: absolute;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+}
+
+.logoPlane {
+  position: absolute;
+  width: 100%;
+  height: auto;
+  z-index: 2;
+  /* Animazione più lunga per fargli godere tutto il volo (3.5s) */
+  animation: voloInIngresso 3.5s ease-in-out forwards;
+}
+
+@keyframes voloInIngresso {
+  0% {
+    /* Parte in alto a destra, invisibile */
+    transform: translate(400%, -300%) rotate(25deg);
+    opacity: 0;
+  }
+  15% {
+    /* Picchiata vertiginosa verso il basso */
+    transform: translate(300%, 100%) rotate(40deg);
+    opacity: 1;
+  }
+  35% {
+    /* Richiama cabrando (si rialza) */
+    transform: translate(200%, 150%) rotate(-5deg);
+  }
+  50% {
+    /* Vola alto per preparare il landing */
+    transform: translate(120%, -50%) rotate(-25deg);
+  }
+  70% {
+    /* Torna dritto quasi a livello */
+    transform: translate(50%, 20%) rotate(10deg);
+  }
+  85% {
+    /* Fine avvicinamento */
+    transform: translate(15%, -10%) rotate(-5deg);
+  }
+  100% {
+    /* Landing perfetto al centro */
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+}
