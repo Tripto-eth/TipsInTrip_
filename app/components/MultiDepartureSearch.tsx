@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import styles from '../page.module.css';
 import AutocompleteInput from './AutocompleteInput';
 import MiniDatePicker from './MiniDatePicker';
+import MiniRangePicker from './MiniRangePicker';
 
 interface ComboFlight {
   origin: string;
@@ -81,9 +81,27 @@ export default function MultiDepartureSearch() {
   ]);
   const [destination, setDestination] = useState('');
   const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [dateMode, setDateMode] = useState<'exact' | 'flex3' | 'range'>('exact');
   const [departDate, setDepartDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
+  const [departDateEnd, setDepartDateEnd] = useState('');
+  const [returnDateEnd, setReturnDateEnd] = useState('');
   const [priority, setPriority] = useState<'price' | 'sync'>('price');
+
+  const countChunks = (start: string, end: string): number => {
+    if (!start || !end) return 1;
+    const s = Date.parse(start);
+    const e = Date.parse(end);
+    if (!s || !e || e < s) return 1;
+    const days = Math.round((e - s) / 86400000) + 1;
+    return Math.ceil(days / 4);
+  };
+
+  const activeOrigins = origins.filter((o) => o.code.trim()).length || origins.length;
+  const outChunks = dateMode === 'range' ? countChunks(departDate, departDateEnd) : 1;
+  const retChunks = isRoundTrip && dateMode === 'range' ? countChunks(returnDate, returnDateEnd) : 1;
+  const estimatedCalls = activeOrigins * outChunks * retChunks;
+  const overCap = estimatedCalls > 24;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +140,20 @@ export default function MultiDepartureSearch() {
       setError('Inserisci la data di ritorno.');
       return;
     }
+    if (dateMode === 'range') {
+      if (!departDateEnd) {
+        setError('Inserisci la fine del range di andata.');
+        return;
+      }
+      if (isRoundTrip && !returnDateEnd) {
+        setError('Inserisci la fine del range di ritorno.');
+        return;
+      }
+      if (overCap) {
+        setError(`Range troppo ampio: ${estimatedCalls} chiamate stimate (max 24). Restringi il periodo o riduci gli aeroporti.`);
+        return;
+      }
+    }
 
     setIsLoading(true);
     setError(null);
@@ -135,8 +167,11 @@ export default function MultiDepartureSearch() {
         body: JSON.stringify({
           origins: cleanOrigins,
           destination: destination.trim(),
+          dateMode,
           departureDate: toDDMMYYYY(departDate),
+          departureDateEnd: dateMode === 'range' && departDateEnd ? toDDMMYYYY(departDateEnd) : undefined,
           returnDate: isRoundTrip && returnDate ? toDDMMYYYY(returnDate) : undefined,
+          returnDateEnd: isRoundTrip && dateMode === 'range' && returnDateEnd ? toDDMMYYYY(returnDateEnd) : undefined,
           priority,
         }),
       });
@@ -153,23 +188,6 @@ export default function MultiDepartureSearch() {
 
   return (
     <div className="animate-fade-in" style={{ width: '100%' }}>
-      <nav
-        className={styles.navbar}
-        style={{
-          background: 'rgba(36, 0, 70, 0.55)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          borderBottom: '1px solid rgba(224,170,255,0.18)',
-          padding: '0.85rem 2rem',
-        }}
-      >
-        <div className={styles.navLeft}>
-          <Link href="/" className={styles.navLink}>← Home</Link>
-        </div>
-        <div className={styles.navCenter}></div>
-        <div className={styles.navRight}></div>
-      </nav>
-
       <section className={styles.heroSection} style={{ paddingTop: '6rem' }}>
         <h1 className={styles.heroTitle} style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)' }}>
           Multi-Partenze
@@ -297,38 +315,113 @@ export default function MultiDepartureSearch() {
                 )}
               </div>
 
+              <div style={{ marginTop: '1rem' }}>
+                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.4rem', textAlign: 'left' }}>Flessibilità date</div>
+                <div style={{
+                  display: 'flex',
+                  gap: '0.4rem',
+                  background: 'rgba(255,255,255,0.06)',
+                  padding: '6px',
+                  borderRadius: '18px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}>
+                  {(['exact', 'flex3', 'range'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setDateMode(m)}
+                      style={{
+                        flex: 1,
+                        padding: '0.55rem 0.5rem',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: dateMode === m ? 'rgba(255,255,255,0.2)' : 'transparent',
+                        color: '#fff',
+                        fontSize: '0.85rem',
+                        fontWeight: dateMode === m ? 600 : 400,
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                      }}
+                    >
+                      {m === 'exact' ? 'Data esatta' : m === 'flex3' ? '± 3 giorni' : 'Range'}
+                    </button>
+                  ))}
+                </div>
+                {dateMode === 'flex3' && (
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.35rem', textAlign: 'left' }}>
+                    Cerchiamo fino a 3 giorni prima/dopo le date scelte.
+                  </div>
+                )}
+                {dateMode === 'range' && (
+                  <div style={{ fontSize: '0.75rem', color: overCap ? '#fbbf24' : 'rgba(255,255,255,0.55)', marginTop: '0.35rem', textAlign: 'left' }}>
+                    Chiamate stimate: {estimatedCalls}/24 {overCap && '— riduci il range'}
+                  </div>
+                )}
+              </div>
+
               <div className={styles.searchRow} style={{ marginTop: '0.75rem' }}>
-                <div style={{ width: '100%', display: 'flex' }}>
-                  <div className={styles.inputGroup} style={{ width: '100%' }}>
-                    <span style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0 0.9rem',
-                      color: 'rgba(255,255,255,0.6)',
-                      fontSize: '0.85rem',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      Andata
-                    </span>
-                    <MiniDatePicker value={departDate} onChange={(d) => { setDepartDate(d); if (returnDate && d > returnDate) setReturnDate(''); }} className={styles.inputField} />
+                {dateMode === 'range' ? (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', minWidth: '70px' }}>Andata</span>
+                      <div style={{ flex: 1 }}>
+                        <MiniRangePicker
+                          startDate={departDate}
+                          endDate={departDateEnd}
+                          onChangeStart={(d) => { setDepartDate(d); if (departDateEnd && d > departDateEnd) setDepartDateEnd(''); }}
+                          onChangeEnd={setDepartDateEnd}
+                          className={styles.inputField}
+                        />
+                      </div>
+                    </div>
                     {isRoundTrip && (
-                      <>
-                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
-                        <span style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0 0.9rem',
-                          color: 'rgba(255,255,255,0.6)',
-                          fontSize: '0.85rem',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          Ritorno
-                        </span>
-                        <MiniDatePicker value={returnDate} onChange={setReturnDate} minDate={departDate || undefined} className={styles.inputField} />
-                      </>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', minWidth: '70px' }}>Ritorno</span>
+                        <div style={{ flex: 1 }}>
+                          <MiniRangePicker
+                            startDate={returnDate}
+                            endDate={returnDateEnd}
+                            onChangeStart={(d) => { setReturnDate(d); if (returnDateEnd && d > returnDateEnd) setReturnDateEnd(''); }}
+                            onChangeEnd={setReturnDateEnd}
+                            className={styles.inputField}
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
+                ) : (
+                  <div style={{ width: '100%', display: 'flex' }}>
+                    <div className={styles.inputGroup} style={{ width: '100%' }}>
+                      <span style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0 0.9rem',
+                        color: 'rgba(255,255,255,0.6)',
+                        fontSize: '0.85rem',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        Andata
+                      </span>
+                      <MiniDatePicker value={departDate} onChange={(d) => { setDepartDate(d); if (returnDate && d > returnDate) setReturnDate(''); }} className={styles.inputField} />
+                      {isRoundTrip && (
+                        <>
+                          <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
+                          <span style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 0.9rem',
+                            color: 'rgba(255,255,255,0.6)',
+                            fontSize: '0.85rem',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            Ritorno
+                          </span>
+                          <MiniDatePicker value={returnDate} onChange={setReturnDate} minDate={departDate || undefined} className={styles.inputField} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={{ marginTop: '0.75rem' }}>

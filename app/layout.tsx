@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Navbar from './components/Navbar';
+import { ClerkProvider } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
@@ -31,11 +34,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it">
-      <body>
-        <div className="glow"></div>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider appearance={{ baseTheme: dark }}>
+      <html lang="it">
+        <body>
+          <div className="glow"></div>
+          <Navbar />
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

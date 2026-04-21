@@ -1,3 +1,14 @@
+Robe da fare:
+-Sfrutta il "cervello" della tua app! Istruisci il tuo backend in Next.js in questo modo:
+
+Se Gemini nota che l'utente sta chiedendo un viaggio negli Stati Uniti, fagli generare un avviso testuale: "Attenzione: le spese mediche negli USA sono altissime. Ti consiglio fortemente di fare un'assicurazione come Heymondo [Tuo Link]".
+
+Se l'utente organizza un viaggio di 3 mesi in Asia, proponi SafetyWing.
+
+Se inserisce parole come "Sci", "Surf" o "Trekking", proponi World Nomads.
+
+-
+
 # FlightList Clone — Project Brief
 
 ## Project Overview

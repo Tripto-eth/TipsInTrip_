@@ -2,7 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 
 const KIWI_MCP_URL = 'https://mcp.kiwi.com/';
-const MAX_RESULTS = 5;
+const DEFAULT_MAX_RESULTS = 5;
 
 export interface KiwiSearchArgs {
   flyFrom: string;
@@ -16,6 +16,7 @@ export interface KiwiSearchArgs {
   sort?: 'price' | 'duration' | 'quality' | 'date';
   curr?: string;
   locale?: string;
+  maxResults?: number;
 }
 
 export interface CleanLeg {
@@ -115,6 +116,7 @@ function cleanOne(raw: RawFlight, passengers?: KiwiSearchArgs['passengers']): Cl
 export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlight[]> {
   const client = new Client({ name: 'tipsintrip', version: '0.1.0' }, { capabilities: {} });
   const transport = new SSEClientTransport(new URL(KIWI_MCP_URL));
+  const { maxResults = DEFAULT_MAX_RESULTS, ...toolArgs } = args;
 
   try {
     await client.connect(transport);
@@ -124,7 +126,7 @@ export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlig
         sort: 'price',
         curr: 'EUR',
         locale: 'it',
-        ...args,
+        ...toolArgs,
       },
     });
 
@@ -135,7 +137,7 @@ export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlig
         try {
           const parsed = JSON.parse(text);
           if (Array.isArray(parsed)) {
-            return parsed.slice(0, MAX_RESULTS).map((raw: RawFlight) => cleanOne(raw, args.passengers));
+            return parsed.slice(0, maxResults).map((raw: RawFlight) => cleanOne(raw, args.passengers));
           }
         } catch {
           // not JSON, skip

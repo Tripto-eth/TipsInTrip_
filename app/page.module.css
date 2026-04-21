@@ -6,7 +6,7 @@
 
 /* Navbar Sivola Style */
 .navbar {
-  position: absolute;
+  position: sticky;
   top: 0;
   left: 0;
   width: 100%;
@@ -14,7 +14,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  z-index: 100;
+  z-index: 200;
 }
 
 .navLeft {
