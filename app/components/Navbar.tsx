@@ -48,6 +48,7 @@ export default function Navbar() {
             <Link href="/consigli" className={styles.navLink}>Consigli di viaggio</Link>
             <Link href="/essentials" className={styles.navLink}>Essenziali</Link>
             <Link href="/globe" className={styles.navLink}>Ispirami</Link>
+            <Link href="/guide" className={styles.navLink}>Guide Tips in Trip</Link>
           </div>
         </div>
         <div className={styles.navCenter} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
