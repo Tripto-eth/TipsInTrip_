@@ -139,10 +139,10 @@ export default function HomeSearch() {
 
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
-  
+
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [isSpecificDate, setIsSpecificDate] = useState(false);
-  
+
   // STATI DATE FLESSIBILI (Range Da-A)
   const [flexDepartStart, setFlexDepartStart] = useState('');
   const [flexDepartEnd, setFlexDepartEnd] = useState('');
@@ -152,6 +152,21 @@ export default function HomeSearch() {
   // STATI DATE ESATTE (Singoli)
   const [exactDepartDate, setExactDepartDate] = useState('');
   const [exactReturnDate, setExactReturnDate] = useState('');
+
+  // Pre-riempie il form se arriva da /globe con parametri URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromParam = params.get('from');
+    const toParam = params.get('to');
+    const dateParam = params.get('date');
+    const retDateParam = params.get('retDate');
+    const rtParam = params.get('rt');
+    if (fromParam) setOrigin(fromParam);
+    if (toParam) setDestination(toParam);
+    if (dateParam) { setExactDepartDate(dateParam); setIsSpecificDate(true); }
+    if (rtParam === '1') setIsRoundTrip(true);
+    if (retDateParam) setExactReturnDate(retDateParam);
+  }, []);
 
   const [directOnly, setDirectOnly] = useState(false);
   const [maxPrice, setMaxPrice] = useState('');

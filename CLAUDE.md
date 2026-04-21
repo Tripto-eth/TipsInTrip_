@@ -9,6 +9,30 @@ Se inserisce parole come "Sci", "Surf" o "Trekking", proponi World Nomads.
 
 -
 
+Problema Chat AI
+-Segnala le mete dello stesso range anche se chiedo di trovare le più economiche senza data specifiche
+-Tabella di output così come il testo decentrato 
+
+Aggiungi dei consigli, vedi se devo addestrare l'IA per non cercare sempre le stesse cose come
+    Serve l'esim?
+    Serve il visto?
+Cose come alloggio e bagagli deposito di default lo puoi mettere sempre
+
+Aggiungi l'itinerario con AI
+
+Sistema le scritte dell'inizio pre-login chat AI
+
+Referral di tutti i tipi da mettere
+
+Sezioni da completare
+
+Multipartenze preferisce avere il minor tempo d'attesa a discapito di scali inutili, aggiungi l'opzione toggle scalo o senza scalo e ottimizza le ricerche, solitamente si usa il range per trovare la migliore opzione, usa le richieste fino al limite consentito da Kiwi per dare sempre la maggior parte di risultati sia nei +-3 giorni che nel range di date
+
+
+
+
+
+
 # FlightList Clone — Project Brief
 
 ## Project Overview

@@ -17,6 +17,7 @@ interface AutocompleteInputProps {
   value: string;
   onChange: (val: string) => void;
   required?: boolean;
+  initialQuery?: string;
 }
 
 export default function AutocompleteInput({
@@ -26,8 +27,9 @@ export default function AutocompleteInput({
   value,
   onChange,
   required,
+  initialQuery,
 }: AutocompleteInputProps) {
-  const [query, setQuery] = useState(value);
+  const [query, setQuery] = useState(initialQuery ?? value);
   const [suggestions, setSuggestions] = useState<Place[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -77,6 +79,14 @@ export default function AutocompleteInput({
       if ((e as Error).name !== 'AbortError') console.error(e);
     }
   };
+
+  useEffect(() => {
+    if (initialQuery && initialQuery.length >= 2) {
+      setQuery(initialQuery);
+      fetchSuggestions(initialQuery);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;

@@ -24,6 +24,7 @@ export default function Navbar() {
           borderBottom: '1px solid rgba(224,170,255,0.18)',
           padding: '0.85rem 2rem',
           boxShadow: '0 4px 20px -8px rgba(0,0,0,0.4)',
+          position: 'relative',
         }}
       >
         <div className={styles.navLeft} style={{ alignItems: 'center', gap: '1.25rem' }}>
@@ -46,6 +47,7 @@ export default function Navbar() {
             <Link href="/itinerari" className={styles.navLink}>Itinerari e Tour</Link>
             <Link href="/consigli" className={styles.navLink}>Consigli di viaggio</Link>
             <Link href="/essentials" className={styles.navLink}>Essenziali</Link>
+            <Link href="/globe" className={styles.navLink}>Ispirami</Link>
           </div>
         </div>
         <div className={styles.navCenter} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -148,6 +150,9 @@ export default function Navbar() {
             </Link>
             <Link href="/essentials" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               Essenziali
+            </Link>
+            <Link href="/globe" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              Ispirami 🌍
             </Link>
             <Link
               href="/chat"
