@@ -59,13 +59,13 @@ export default function Navbar() {
         </div>
         <div className={styles.navRight} style={{ gap: '0.75rem', alignItems: 'center' }}>
           {isSignedIn ? (
-            <div className="nav-desktop-only">
+            <div>
               <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 35, height: 35 } } }} />
             </div>
           ) : (
             <SignInButton mode="modal">
               <button
-                className={`${styles.navLink} nav-desktop-only`}
+                className={styles.navLink}
                 aria-label="Login"
                 style={{
                   alignItems: 'center',
