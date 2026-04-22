@@ -304,7 +304,7 @@ export default function MultiDepartureSearch() {
                 <div className={styles.segmentedControl}>
                   <div className={styles.slideIndicator} style={{ transform: isRoundTrip ? 'translateX(100%)' : 'translateX(0%)' }} />
                   <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(false)}>Andata</button>
-                  <button type="button" className={`${styles.segmentBtn} ${isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(true)}>Andata e ritorno</button>
+                  <button type="button" className={`${styles.segmentBtn} ${isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(true)}>A/R</button>
                 </div>
                 {isRoundTrip && (
                   <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.35rem', textAlign: 'left' }}>
@@ -436,7 +436,7 @@ export default function MultiDepartureSearch() {
                 <div className={styles.segmentedControl}>
                   <div className={styles.slideIndicator} style={{ transform: priority === 'sync' ? 'translateX(100%)' : 'translateX(0%)' }} />
                   <button type="button" className={`${styles.segmentBtn} ${priority === 'price' ? styles.activeText : ''}`} onClick={() => setPriority('price')}>Prezzo</button>
-                  <button type="button" className={`${styles.segmentBtn} ${priority === 'sync' ? styles.activeText : ''}`} onClick={() => setPriority('sync')}>Arrivo ravvicinato</button>
+                  <button type="button" className={`${styles.segmentBtn} ${priority === 'sync' ? styles.activeText : ''}`} onClick={() => setPriority('sync')}>Sincrono</button>
                 </div>
               </div>
 

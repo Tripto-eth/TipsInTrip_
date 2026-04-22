@@ -74,8 +74,8 @@ export default function Navbar() {
           )}
         </div>
         <div className={styles.navRight} style={{ gap: '0.75rem', alignItems: 'center' }}>
-          {/* Language toggle */}
-          <div style={{ display: 'flex', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', overflow: 'hidden' }}>
+          {/* Language toggle — hidden on mobile (visible in drawer) */}
+          <div className="nav-desktop-only" style={{ display: 'flex', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', overflow: 'hidden' }}>
             {(['it', 'en'] as const).map((l) => (
               <button
                 key={l}
@@ -176,17 +176,18 @@ export default function Navbar() {
             >
               ×
             </button>
-            <Link href="/offerte-catania" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {t.footer.links.catania}
+            <Link href="/offerte-catania" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {t.nav.offers}
             </Link>
-            <Link href="/multi-partenze" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <Link href="/multi-partenze" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ backgroundColor: '#ffb300', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px', fontWeight: 'bold' }}>NEW</span>
               {t.nav.multiDep}
             </Link>
-            <Link href="/itinerari" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {t.footer.links.itinerari}
+            <Link href="/guide" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              {t.nav.guides}
             </Link>
-            <Link href="/consigli" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {t.footer.links.consigli}
+            <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              {t.nav.blog}
             </Link>
             <Link href="/essentials" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               {t.nav.essentials}

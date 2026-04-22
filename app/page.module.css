@@ -632,3 +632,18 @@
 .detailRow:last-child {
   margin-bottom: 0;
 }
+
+@media (max-width: 640px) {
+  .segmentBtn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0;
+  }
+
+  .topFiltersContainer {
+    gap: 0.75rem;
+  }
+
+  .searchContainer {
+    padding: 0 0.75rem;
+  }
+}

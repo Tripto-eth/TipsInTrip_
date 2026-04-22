@@ -145,8 +145,8 @@ export default function MiniRangePicker({ startDate, endDate, onChangeStart, onC
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '0 auto' }}>
           {!startDate && !endDate ? (
-            <span style={{ fontWeight: 500, whiteSpace: 'nowrap', color: 'rgba(255,255,255,0.6)' }}>
-              {label === 'Andata' ? 'Seleziona il range di date' : 'Seleziona date di ritorno'}
+            <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>
+              {label === 'Andata' ? 'Seleziona date' : 'Date ritorno'}
             </span>
           ) : (
             <>
@@ -167,8 +167,8 @@ export default function MiniRangePicker({ startDate, endDate, onChangeStart, onC
         <div style={{
           position: 'absolute',
           top: 'calc(100% + 8px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: '0',
+          right: 'auto',
           zIndex: 999,
           background: 'rgba(36, 0, 70, 0.85)',
           border: '1px solid rgba(255,255,255,0.15)',
