@@ -1,9 +1,10 @@
 ---
 title: "Abdul"
 description: "Il tuo Local Expert e scudo protettivo a Sharm el-Sheikh"
-coverImage: "/abdul.jpg"
+coverImage: "/abdul.jpeg"
 price: "Sharm el-Sheikh, Egitto"
-lingue: "🇮🇹 🇬🇧 🇪🇬"
+lingue: "🇬🇧 🇪🇬"
+tags: ["Guide", "Transfer", "Local Vibes"]
 ---
 
 ## Scopri la vera Sharm el-Sheikh con Abdul

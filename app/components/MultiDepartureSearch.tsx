@@ -5,6 +5,7 @@ import styles from '../page.module.css';
 import AutocompleteInput from './AutocompleteInput';
 import MiniDatePicker from './MiniDatePicker';
 import MiniRangePicker from './MiniRangePicker';
+import PageHeader from './PageHeader';
 
 interface ComboFlight {
   origin: string;
@@ -87,6 +88,7 @@ export default function MultiDepartureSearch() {
   const [departDateEnd, setDepartDateEnd] = useState('');
   const [returnDateEnd, setReturnDateEnd] = useState('');
   const [priority, setPriority] = useState<'price' | 'sync'>('price');
+  const [directOnly, setDirectOnly] = useState(false);
 
   const countChunks = (start: string, end: string): number => {
     if (!start || !end) return 1;
@@ -101,7 +103,7 @@ export default function MultiDepartureSearch() {
   const outChunks = dateMode === 'range' ? countChunks(departDate, departDateEnd) : 1;
   const retChunks = isRoundTrip && dateMode === 'range' ? countChunks(returnDate, returnDateEnd) : 1;
   const estimatedCalls = activeOrigins * outChunks * retChunks;
-  const overCap = estimatedCalls > 24;
+  const overCap = estimatedCalls > 50;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +152,7 @@ export default function MultiDepartureSearch() {
         return;
       }
       if (overCap) {
-        setError(`Range troppo ampio: ${estimatedCalls} chiamate stimate (max 24). Restringi il periodo o riduci gli aeroporti.`);
+        setError(`Range troppo ampio: ${estimatedCalls} chiamate stimate (max 50). Restringi il periodo o riduci gli aeroporti.`);
         return;
       }
     }
@@ -173,6 +175,7 @@ export default function MultiDepartureSearch() {
           returnDate: isRoundTrip && returnDate ? toDDMMYYYY(returnDate) : undefined,
           returnDateEnd: isRoundTrip && dateMode === 'range' && returnDateEnd ? toDDMMYYYY(returnDateEnd) : undefined,
           priority,
+          directOnly,
         }),
       });
       const data = await res.json();
@@ -188,17 +191,12 @@ export default function MultiDepartureSearch() {
 
   return (
     <div className="animate-fade-in" style={{ width: '100%' }}>
-      <section className={styles.heroSection} style={{ paddingTop: '6rem' }}>
-        <h1 className={styles.heroTitle} style={{ fontSize: 'clamp(2rem, 4.5vw, 3rem)' }}>
-          Multi-Partenze
-        </h1>
-        <div className={styles.heroPromises} style={{ maxWidth: '720px', margin: '0 auto 2rem' }}>
-          <div>Parti insieme ai tuoi amici, parenti o partner anche se siete in città diverse.</div>
-          <div style={{ marginTop: '0.5rem' }}>
-            Inserisci fino a 6 aeroporti di partenza, un&apos;unica destinazione, e trova le combinazioni migliori per prezzo o per arrivare tutti quasi insieme.
-          </div>
-        </div>
-
+      {/* bgImage="/headers/multi-partenze.jpg" — aggiungi la tua immagine quando pronta */}
+      <PageHeader
+        title="Multi-Partenze"
+        description="Parti insieme ai tuoi amici, parenti o partner anche se siete in città diverse. Inserisci fino a 6 aeroporti e trova le combinazioni migliori per prezzo o per arrivare tutti quasi insieme."
+      />
+      <section className={styles.heroSection} style={{ paddingTop: '2rem', backgroundImage: 'none', background: 'transparent' }}>
         <div className={`${styles.searchContainer} delay-100 animate-fade-in`}>
           <div className={styles.searchClassicBox}>
             <form className={styles.searchFormClassic} onSubmit={handleSubmit}>
@@ -354,7 +352,7 @@ export default function MultiDepartureSearch() {
                 )}
                 {dateMode === 'range' && (
                   <div style={{ fontSize: '0.75rem', color: overCap ? '#fbbf24' : 'rgba(255,255,255,0.55)', marginTop: '0.35rem', textAlign: 'left' }}>
-                    Chiamate stimate: {estimatedCalls}/24 {overCap && '— riduci il range'}
+                    Chiamate stimate: {estimatedCalls}/50 {overCap && '— riduci il range'}
                   </div>
                 )}
               </div>
@@ -422,6 +420,15 @@ export default function MultiDepartureSearch() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.4rem', textAlign: 'left' }}>Voli</div>
+                <div className={styles.segmentedControl}>
+                  <div className={styles.slideIndicator} style={{ transform: directOnly ? 'translateX(100%)' : 'translateX(0%)' }} />
+                  <button type="button" className={`${styles.segmentBtn} ${!directOnly ? styles.activeText : ''}`} onClick={() => setDirectOnly(false)}>Con scalo</button>
+                  <button type="button" className={`${styles.segmentBtn} ${directOnly ? styles.activeText : ''}`} onClick={() => setDirectOnly(true)}>Solo diretti</button>
+                </div>
               </div>
 
               <div style={{ marginTop: '0.75rem' }}>

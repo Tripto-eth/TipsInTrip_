@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLang } from '../context/LanguageContext';
 
 export default function NewsletterPopup() {
+  const { t } = useLang();
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -100,7 +102,7 @@ export default function NewsletterPopup() {
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
         }}>
-          Non perderti le offerte!
+          {t.newsletter.title}
         </h2>
 
         <p style={{
@@ -109,7 +111,7 @@ export default function NewsletterPopup() {
           margin: '0 0 1.25rem',
           lineHeight: 1.5,
         }}>
-          Iscriviti alla newsletter e ricevi i voli più economici direttamente via email.
+          {t.newsletter.body}
         </p>
 
         {submitted ? (
@@ -121,7 +123,7 @@ export default function NewsletterPopup() {
             color: 'var(--secondary)',
             fontSize: '0.9rem',
           }}>
-            Grazie! Ti aggiorneremo presto ✨
+            {t.newsletter.success}
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -129,7 +131,7 @@ export default function NewsletterPopup() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="La tua email"
+              placeholder={t.newsletter.placeholder}
               required
               aria-label="Email"
               style={{
@@ -160,7 +162,7 @@ export default function NewsletterPopup() {
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              Iscrivimi
+              {t.newsletter.submit}
             </button>
           </form>
         )}
@@ -170,7 +172,7 @@ export default function NewsletterPopup() {
           color: 'rgba(255,255,255,0.4)',
           margin: '0.85rem 0 0',
         }}>
-          Nessuno spam. Puoi annullare quando vuoi.
+          {t.newsletter.disclaimer}
         </p>
       </div>
     </div>

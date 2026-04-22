@@ -4,6 +4,7 @@ description: "Il tuo Local Expert tra la Valle dei Re e il Mar Rosso"
 coverImage: "/boyka.jpeg"
 price: "Luxor, Hurghada, Marsa Alam, Abu Simbel"
 lingue: "🇮🇹 🇬🇧 🇪🇬"
+tags: ["Tour", "Transfer", "Local Vibes"]
 ---
 
 ## Il tuo Local Expert per il Sud dell'Egitto

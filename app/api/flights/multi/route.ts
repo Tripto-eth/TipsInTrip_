@@ -17,6 +17,7 @@ interface MultiSearchBody {
   returnDate?: string;
   returnDateEnd?: string;
   priority: 'price' | 'sync';
+  directOnly?: boolean;
 }
 
 interface Combo {
@@ -96,9 +97,9 @@ export async function POST(request: NextRequest) {
       : [null as DateChunk | null];
 
     const totalCalls = body.origins.length * outChunks.length * retChunks.length;
-    if (totalCalls > 24) {
+    if (totalCalls > 50) {
       return NextResponse.json(
-        { error: `Range troppo ampio: ${totalCalls} chiamate stimate (max 24).` },
+        { error: `Range troppo ampio: ${totalCalls} chiamate stimate (max 50).` },
         { status: 400 },
       );
     }
@@ -119,6 +120,7 @@ export async function POST(request: NextRequest) {
                 returnDateFlexRange: rc && rc.flex ? rc.flex : undefined,
                 passengers: { adults: adultsClean },
                 maxResults: 50,
+                directFlightsOnly: body.directOnly,
               }).catch(() => [] as CleanFlight[]),
             );
           }
@@ -133,7 +135,14 @@ export async function POST(request: NextRequest) {
           seen.add(key);
           deduped.push(f);
         }
-        return { origin: code, adults: adultsClean, flights: deduped };
+        const filtered = body.directOnly
+          ? deduped.filter(
+              (f) =>
+                f.outbound.layovers.length === 0 &&
+                (!f.return || f.return.layovers.length === 0),
+            )
+          : deduped;
+        return { origin: code, adults: adultsClean, flights: filtered };
       }),
     );
 
@@ -201,7 +210,7 @@ export async function POST(request: NextRequest) {
 
     combos.sort((a, b) => a.score - b.score);
 
-    return NextResponse.json({ data: combos.slice(0, 5) });
+    return NextResponse.json({ data: combos.slice(0, 15) });
   } catch (error) {
     console.error('Errore API multi:', error);
     const msg = error instanceof Error ? error.message : 'Errore interno del server';

@@ -7,6 +7,7 @@ import ChatWindow from '../components/ChatWindow';
 import InputBar from '../components/InputBar';
 import AnimatedLogo from '../components/AnimatedLogo';
 import SearchFormCompact from '../components/SearchFormCompact';
+import PageHeader from '../components/PageHeader';
 import type { ChatMessage } from '../types/chat';
 
 // =============================================================================
@@ -234,9 +235,15 @@ export default function ChatPage() {
   };
 
   return (
+    <>
+      {/* bgImage="/headers/chat.jpg" — aggiungi la tua immagine quando pronta */}
+      <PageHeader
+        title="✨ TipsInTrip AI"
+        description="Trova il volo più economico — chiedilo in italiano"
+      />
     <main style={{
       width: '100%',
-      minHeight: '100dvh',
+      flex: 1,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -247,15 +254,11 @@ export default function ChatPage() {
         maxWidth: '800px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.75rem 0 1.25rem',
+        justifyContent: 'flex-end',
+        padding: '0.25rem 0 1rem',
         borderBottom: '1px solid rgba(255,255,255,0.07)',
         marginBottom: '0.75rem',
       }}>
-        <div>
-          <h1 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>✨ TipsInTrip AI</h1>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: '0.15rem 0 0' }}>Trova il volo più economico — chiedilo in italiano</p>
-        </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
           {/* Contatore Crediti */}
           {credits !== null && (
@@ -347,6 +350,7 @@ export default function ChatPage() {
         />
       </section>
     </main>
+    </>
   );
 }
 

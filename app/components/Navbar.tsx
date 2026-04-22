@@ -1,17 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth, SignInButton, UserButton } from '@clerk/nextjs';
 import AnimatedLogo from './AnimatedLogo';
 import styles from '../page.module.css';
+import { useLang } from '../context/LanguageContext';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { isSignedIn } = useAuth();
   const pathname = usePathname();
-  const showCenterLogo = pathname !== '/';
+  const { lang, setLang, t } = useLang();
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const showCenterLogo = mounted && pathname !== '/';
 
   return (
     <>
@@ -41,15 +47,24 @@ export default function Navbar() {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <div className="nav-desktop-only" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '1.25rem', whiteSpace: 'nowrap', alignItems: 'center' }}>
-            <Link href="/offerte-catania" className={styles.navLink}>Migliori offerte da Catania</Link>
-            <Link href="/multi-partenze" className={styles.navLink}>Multi-Partenze</Link>
-            <Link href="/itinerari" className={styles.navLink}>Itinerari e Tour</Link>
-            <Link href="/consigli" className={styles.navLink}>Consigli di viaggio</Link>
-            <Link href="/essentials" className={styles.navLink}>Essenziali</Link>
-            <Link href="/globe" className={styles.navLink}>Ispirami</Link>
-            <Link href="/guide" className={styles.navLink}>Guide Tips in Trip</Link>
-          </div>
+<div className="nav-desktop-only" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '1.25rem', whiteSpace: 'nowrap', alignItems: 'center' }}>
+  <Link href="/offerte-catania" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    {t.nav.offers}
+  </Link>
+  <Link href="/multi-partenze" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <span style={{ backgroundColor: '#ffb300', color: 'white', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '12px', fontWeight: 'bold', lineHeight: '1' }}>NEW</span>
+    {t.nav.multiDep}
+  </Link>
+  <Link href="/guide" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    {t.nav.guides}
+  </Link>
+  <Link href="/blog" className={styles.navLink}>
+    {t.nav.blog}
+  </Link>
+  <Link href="/essentials" className={styles.navLink}>
+    {t.nav.essentials}
+  </Link>
+</div>
         </div>
         <div className={styles.navCenter} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           {showCenterLogo && (
@@ -59,6 +74,30 @@ export default function Navbar() {
           )}
         </div>
         <div className={styles.navRight} style={{ gap: '0.75rem', alignItems: 'center' }}>
+          {/* Language toggle */}
+          <div style={{ display: 'flex', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', overflow: 'hidden' }}>
+            {(['it', 'en'] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLang(l)}
+                style={{
+                  padding: '0.3rem 0.6rem',
+                  fontSize: '0.75rem',
+                  fontWeight: lang === l ? 700 : 400,
+                  background: lang === l ? 'rgba(224,170,255,0.2)' : 'transparent',
+                  color: lang === l ? '#e0aaff' : 'rgba(255,255,255,0.5)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
           {isSignedIn ? (
             <div>
               <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 35, height: 35 } } }} />
@@ -81,7 +120,7 @@ export default function Navbar() {
                   cursor: 'pointer',
                 }}
               >
-                Login
+                {t.nav.login}
               </button>
             </SignInButton>
           )}
@@ -138,22 +177,19 @@ export default function Navbar() {
               ×
             </button>
             <Link href="/offerte-catania" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Migliori offerte da Catania
+              {t.footer.links.catania}
             </Link>
             <Link href="/multi-partenze" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Multi-Partenze
+              {t.nav.multiDep}
             </Link>
             <Link href="/itinerari" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Itinerari e Tour
+              {t.footer.links.itinerari}
             </Link>
             <Link href="/consigli" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Consigli di viaggio
+              {t.footer.links.consigli}
             </Link>
             <Link href="/essentials" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Essenziali
-            </Link>
-            <Link href="/globe" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Ispirami 🌍
+              {t.nav.essentials}
             </Link>
             <Link
               href="/chat"
@@ -169,8 +205,47 @@ export default function Navbar() {
                 textAlign: 'center',
               }}
             >
-              ✨ TipsInTrip AI
+              ✨ {t.hero.aiLabel}
             </Link>
+            <Link
+              href="/globe"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                marginTop: '0.5rem',
+                padding: '0.7rem 1rem',
+                borderRadius: '999px',
+                background: 'linear-gradient(135deg, rgba(0,120,80,0.35), rgba(100,220,160,0.2))',
+                border: '1px solid rgba(100,220,160,0.35)',
+                color: '#fff',
+                fontWeight: 600,
+                textAlign: 'center',
+              }}
+            >
+              🌍 {t.hero.inspireLabel}
+            </Link>
+            {/* Language toggle mobile */}
+            <div style={{ display: 'flex', marginTop: '0.75rem', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', overflow: 'hidden', alignSelf: 'flex-start' }}>
+              {(['it', 'en'] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLang(l)}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    fontSize: '0.8rem',
+                    fontWeight: lang === l ? 700 : 400,
+                    background: lang === l ? 'rgba(224,170,255,0.2)' : 'transparent',
+                    color: lang === l ? '#e0aaff' : 'rgba(255,255,255,0.5)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
             {isSignedIn ? (
               <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 40, height: 40 } } }} />
@@ -192,7 +267,7 @@ export default function Navbar() {
                     width: '100%',
                   }}
                 >
-                  Login
+                  {t.nav.login}
                 </button>
               </SignInButton>
             )}

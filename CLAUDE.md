@@ -26,7 +26,13 @@ Referral di tutti i tipi da mettere
 
 Sezioni da completare
 
-Multipartenze preferisce avere il minor tempo d'attesa a discapito di scali inutili, aggiungi l'opzione toggle scalo o senza scalo e ottimizza le ricerche, solitamente si usa il range per trovare la migliore opzione, usa le richieste fino al limite consentito da Kiwi per dare sempre la maggior parte di risultati sia nei +-3 giorni che nel range di date
+Aggiungi Cookie
+
+Aggiungi newsletter
+
+Aggiungi Lotteria
+
+Multipartenze preferisce avere il minor tempo d'attesa a discapito di scali inutili, aggiungi l'opzione toggle scalo o senza scalo e ottimizza le ricerche, solitamente si usa il range per trovare la migliore opzione, usa le richieste fino al limite consentito da Kiwi per dare sempre la maggior parte di risultati sia nei +-3 giorni che nel range di date - FATTO
 
 
 

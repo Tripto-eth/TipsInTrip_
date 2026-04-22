@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getSortedEssentialsData } from '../../lib/essentials';
 import styles from './essentials.module.css';
+import PageHeader from '../components/PageHeader';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
@@ -23,10 +24,11 @@ export default function Essentials() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Essenziali da viaggio ✨</h1>
-        <p>eSIM, assicurazioni, noleggi, gadget — selezionati e testati per chi viaggia spesso.</p>
-      </header>
+      {/* bgImage="/headers/essentials.jpg" — aggiungi la tua immagine quando pronta */}
+      <PageHeader
+        title="Essenziali da viaggio ✨"
+        description="eSIM, assicurazioni, noleggi, gadget — selezionati e testati per chi viaggia spesso."
+      />
 
       {items.length === 0 ? (
         <div style={{ textAlign: 'center', opacity: 0.6, padding: '3rem 1rem' }}>

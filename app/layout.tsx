@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import { LanguageProvider } from './context/LanguageContext';
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 
@@ -36,10 +38,13 @@ export default function RootLayout({
   return (
     <ClerkProvider appearance={{ baseTheme: dark }}>
       <html lang="it">
-        <body>
-          <div className="glow"></div>
-          <Navbar />
-          {children}
+        <body suppressHydrationWarning>
+          <LanguageProvider>
+            <div className="glow"></div>
+            <Navbar />
+            {children}
+            <Footer />
+          </LanguageProvider>
         </body>
       </html>
     </ClerkProvider>

@@ -4,6 +4,7 @@ description: "Il tuo Local Expert al Cairo"
 coverImage: "/khaled.jpeg"
 price: "Il Cairo, Egitto"
 lingue: "🇮🇹 🇬🇧 🇪🇬"
+tags: ["Tour", "Guide", "Local Vibes"]
 ---
 
 ## Il tuo Local Expert al Cairo

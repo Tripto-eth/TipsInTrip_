@@ -17,6 +17,7 @@ export interface KiwiSearchArgs {
   curr?: string;
   locale?: string;
   maxResults?: number;
+  directFlightsOnly?: boolean;
 }
 
 export interface CleanLeg {
@@ -116,7 +117,7 @@ function cleanOne(raw: RawFlight, passengers?: KiwiSearchArgs['passengers']): Cl
 export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlight[]> {
   const client = new Client({ name: 'tipsintrip', version: '0.1.0' }, { capabilities: {} });
   const transport = new SSEClientTransport(new URL(KIWI_MCP_URL));
-  const { maxResults = DEFAULT_MAX_RESULTS, ...toolArgs } = args;
+  const { maxResults = DEFAULT_MAX_RESULTS, directFlightsOnly, ...toolArgs } = args;
 
   try {
     await client.connect(transport);
@@ -126,6 +127,7 @@ export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlig
         sort: 'price',
         curr: 'EUR',
         locale: 'it',
+        ...(directFlightsOnly ? { directFlights: 1 } : {}),
         ...toolArgs,
       },
     });

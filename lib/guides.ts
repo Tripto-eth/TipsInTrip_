@@ -23,12 +23,13 @@ export function getSortedGuidesData() {
     // Combina i dati con l'ID
     return {
       id,
-      ...(matterResult.data as { 
-        title: string; 
-        description?: string; 
+      ...(matterResult.data as {
+        title: string;
+        description?: string;
         coverImage?: string;
         price?: string;
         lingue?: string;
+        tags?: string[];
       }),
     };
   });

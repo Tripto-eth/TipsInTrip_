@@ -7,6 +7,7 @@ import MiniRangePicker from './MiniRangePicker';
 import MiniDatePicker from './MiniDatePicker';
 import AnimatedLogo from './AnimatedLogo';
 import AutocompleteInput from './AutocompleteInput';
+import { useLang } from '../context/LanguageContext';
 
 interface Flight {
   id: string;
@@ -32,7 +33,8 @@ function FlightCardItem({ flight }: { flight: Flight }) {
     return new Date(y, m - 1, d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  const stopsLabel = (n: number) => (n === 0 ? 'Diretto' : `${n} scal${n > 1 ? 'i' : 'o'}`);
+  const { t } = useLang();
+  const stopsLabel = (n: number) => n === 0 ? t.results.direct : `${n} ${n > 1 ? t.results.stops : t.results.stop}`;
 
   return (
     <div className={styles.flightCard}>
@@ -51,7 +53,7 @@ function FlightCardItem({ flight }: { flight: Flight }) {
             borderRadius: '8px',
             border: '1px solid rgba(255,255,255,0.06)',
           }}>
-            <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '0.25rem' }}>🛫 Andata</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '0.25rem' }}>{t.results.outbound}</div>
             <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{formatDateStr(flight.depart_date)}</div>
             <div style={{ fontSize: '0.72rem', opacity: 0.65, marginTop: '0.2rem' }}>
               {flight.duration_out_str || '—'} · {stopsLabel(flight.stops_out)}
@@ -66,7 +68,7 @@ function FlightCardItem({ flight }: { flight: Flight }) {
               borderRadius: '8px',
               border: '1px solid rgba(255,255,255,0.06)',
             }}>
-              <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '0.25rem' }}>🛬 Ritorno</div>
+              <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '0.25rem' }}>{t.results.returnLabel}</div>
               <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{formatDateStr(flight.return_date)}</div>
               <div style={{ fontSize: '0.72rem', opacity: 0.65, marginTop: '0.2rem' }}>
                 {flight.duration_back_str || '—'} · {stopsLabel(flight.stops_back)}
@@ -77,27 +79,27 @@ function FlightCardItem({ flight }: { flight: Flight }) {
 
         <div className={styles.flightDetailsAccordion}>
           <button className={styles.detailsToggle} onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? 'Nascondi dettagli' : 'Mostra dettagli'} {isOpen ? '▲' : '▼'}
+            {isOpen ? t.results.hideDetails : t.results.showDetails} {isOpen ? '▲' : '▼'}
           </button>
 
           {isOpen && (
             <div className={styles.detailsContent}>
               <div className={styles.detailRow}>
-                <span>Orari esatti:</span>
-                <span style={{ color: 'orange' }}>Non forniti da Aviasales (solo data)</span>
+                <span>{t.results.exactTimes}</span>
+                <span style={{ color: 'orange' }}>{t.results.timesNote}</span>
               </div>
               <div className={styles.detailRow}>
-                <span>Aeroporti e scali precisi:</span>
-                <span style={{ color: 'orange' }}>Visibili su Aviasales al click</span>
+                <span>{t.results.exactAirports}</span>
+                <span style={{ color: 'orange' }}>{t.results.airportsNote}</span>
               </div>
               {flight.isRoundTrip && (
                 <div className={styles.detailRow}>
-                  <span>Tipo prezzo:</span>
-                  <span>Stima a/r (andata + ritorno combinati)</span>
+                  <span>{t.results.priceType}</span>
+                  <span>{t.results.priceTypeNote}</span>
                 </div>
               )}
               <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                Clicca su &quot;Compra volo&quot; per aprire la ricerca su Aviasales e vedere orari, scali e prezzo definitivo.
+                {t.results.clickNote}
               </div>
             </div>
           )}
@@ -107,7 +109,7 @@ function FlightCardItem({ flight }: { flight: Flight }) {
       <div className={styles.priceContainer}>
         <div className={styles.price}>€{flight.price}</div>
         <a href={flight.deepLink} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.875rem' }}>
-          Compra volo
+          {t.results.buy}
         </a>
       </div>
     </div>
@@ -115,7 +117,8 @@ function FlightCardItem({ flight }: { flight: Flight }) {
 }
 
 export default function HomeSearch() {
-  const phrases = ["da solo", "con gli amici", "con la tua metà", "con Tips in Trip"];
+  const { t } = useLang();
+  const phrases = t.hero.phrases as readonly string[];
   const [phraseIndex, setPhraseIndex] = useState(0);
 
   useEffect(() => {
@@ -264,7 +267,7 @@ export default function HomeSearch() {
                 }}
               >
                 <span aria-hidden>✨</span>
-                <span>TipsInTrip AI</span>
+                <span>{t.hero.aiLabel}</span>
               </Link>
               <div
                 aria-hidden
@@ -300,12 +303,34 @@ export default function HomeSearch() {
                   <path d="M4 14 L 10 9" />
                   <path d="M4 14 L 10 19" />
                 </svg>
-                <span>Prova la nostra AI</span>
+                <span>{t.hero.aiDoodle}</span>
               </div>
             </div>
+            <Link
+              href="/globe"
+              className={styles.navLink}
+              aria-label="Ispirami"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.4rem 0.85rem',
+                borderRadius: '999px',
+                background: 'linear-gradient(135deg, rgba(0,120,80,0.25), rgba(100,220,160,0.15))',
+                border: '1px solid rgba(100,220,160,0.35)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                whiteSpace: 'nowrap',
+                fontSize: '0.82rem',
+                marginTop: '0.5rem',
+              }}
+            >
+              <span aria-hidden>🌍</span>
+              <span>{t.hero.inspireLabel}</span>
+            </Link>
           </div>
           <h1 className={styles.heroTitle}>
-            Gira il mondo{" "}
+            {t.hero.title}{" "}
             <span 
               className={`${styles.rotatingTextWrapper} ${phraseIndex === phrases.length - 1 ? styles.textPrimary : styles.textWhite}`}
               onMouseEnter={handleHoverText}
@@ -323,10 +348,10 @@ export default function HomeSearch() {
             </span>
           </h1>
           <div className={styles.heroPromises} style={{ fontWeight: 400, lineHeight: 1.5, opacity: 0.9 }}>
-            <div>Trova i voli più economici verso qualsiasi destinazione nel mondo.</div>
-            <div>Scopri rotte alternative e le date più convenienti con la ricerca flessibile.</div>
+            <div>{t.hero.promise1}</div>
+            <div>{t.hero.promise2}</div>
             <div style={{ marginTop: '0.75rem', fontSize: '0.95rem' }}>
-              ⭐ Cerca per Paese o Macro-Regione, ad esempio <strong style={{ color: 'var(--primary-hover)' }}>Italia → Olanda</strong> o <strong style={{ color: 'var(--primary-hover)' }}>Europa → Sud-Est Asiatico</strong>
+              {t.hero.hint}<strong style={{ color: 'var(--primary-hover)' }}>{t.hero.hintExample1}</strong>{t.hero.hintOr}<strong style={{ color: 'var(--primary-hover)' }}>{t.hero.hintExample2}</strong>
             </div>
           </div>
 
@@ -337,22 +362,22 @@ export default function HomeSearch() {
                 {/* RIGA 1: Origine e Destinazione */}
                 <div className={styles.searchRow}>
                   <div className={styles.inputGroupBox}>
-                    <AutocompleteInput 
-                      id="origin" 
-                      label="Origine" 
-                      placeholder="Città di partenza" 
-                      value={origin} 
-                      onChange={setOrigin} 
-                      required 
+                    <AutocompleteInput
+                      id="origin"
+                      label={t.search.origin}
+                      placeholder={t.search.originPlaceholder}
+                      value={origin}
+                      onChange={setOrigin}
+                      required
                     />
                   </div>
                   <div className={styles.inputGroupBox}>
-                    <AutocompleteInput 
-                      id="destination" 
-                      label="Destinazione" 
-                      placeholder="Dove vuoi andare?" 
-                      value={destination} 
-                      onChange={setDestination} 
+                    <AutocompleteInput
+                      id="destination"
+                      label={t.search.destination}
+                      placeholder={t.search.destPlaceholder}
+                      value={destination}
+                      onChange={setDestination}
                     />
                   </div>
                 </div>
@@ -361,14 +386,14 @@ export default function HomeSearch() {
                 <div className={styles.topFiltersContainer}>
                   <div className={styles.segmentedControl}>
                     <div className={styles.slideIndicator} style={{ transform: isRoundTrip ? 'translateX(100%)' : 'translateX(0%)' }} />
-                    <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(false)}>Solo Andata</button>
-                    <button type="button" className={`${styles.segmentBtn} ${isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(true)}>Andata/Ritorno</button>
+                    <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(false)}>{t.search.oneWay}</button>
+                    <button type="button" className={`${styles.segmentBtn} ${isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(true)}>{t.search.roundTrip}</button>
                   </div>
 
                   <div className={styles.segmentedControl}>
                     <div className={styles.slideIndicator} style={{ transform: isSpecificDate ? 'translateX(100%)' : 'translateX(0%)' }} />
-                    <button type="button" className={`${styles.segmentBtn} ${!isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(false)}>Mese Flessibile</button>
-                    <button type="button" className={`${styles.segmentBtn} ${isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(true)}>Data Esatta</button>
+                    <button type="button" className={`${styles.segmentBtn} ${!isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(false)}>{t.search.flexMonth}</button>
+                    <button type="button" className={`${styles.segmentBtn} ${isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(true)}>{t.search.exactDate}</button>
                   </div>
                 </div>
 
@@ -425,7 +450,7 @@ export default function HomeSearch() {
                       onChange={(e) => setDirectOnly(e.target.checked)}
                       style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
                     />
-                    Solo voli diretti
+                    {t.search.directOnly}
                   </label>
 
                   <div style={{
@@ -438,7 +463,7 @@ export default function HomeSearch() {
                     borderRadius: '10px',
                     flex: '1 1 auto',
                   }}>
-                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Prezzo max €</span>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{t.search.maxPrice}</span>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -465,7 +490,7 @@ export default function HomeSearch() {
                 {/* RIGA 3: Pulsante Cerca Voli Isolato */}
                 <div className={styles.buttonRow}>
                   <button type="submit" className={styles.searchBtnBox} disabled={isLoading}>
-                    {isLoading ? '...' : 'Partiamo'}
+                    {isLoading ? '...' : t.search.searchBtn}
                   </button>
                 </div>
 
@@ -496,13 +521,13 @@ export default function HomeSearch() {
                   marginBottom: '0.5rem',
                   lineHeight: 1.5,
                 }}>
-                  ⓘ Prezzi forniti in cache dal provider, aggiornati indicativamente ogni 24h. Il prezzo definitivo viene confermato al click sul volo.
+                  {t.search.cacheNote}
                 </div>
                 {flights.map(flight => <FlightCardItem key={flight.id} flight={flight} />)}
               </>
             ) : (
               <div className={styles.emptyState}>
-                Nessun volo trovato per i parametri inseriti. Prova ad ampliare la ricerca (ad esempio usa date flessibili o cambia origine).
+                {t.results.noResults}
               </div>
             )}
           </section>

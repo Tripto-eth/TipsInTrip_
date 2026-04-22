@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getSortedPostsData } from '../../lib/posts';
 import styles from './blog.module.css';
+import PageHeader from '../components/PageHeader';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
@@ -28,10 +29,11 @@ export default function Blog() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.blogHeader}>
-        <h1>Il Blog di TipsinTrip 🌍</h1>
-        <p>Guide, segreti e trucchi nascosti per volare low-cost sfidando l&apos;algoritmo.</p>
-      </header>
+      {/* bgImage="/headers/blog.jpg" — aggiungi la tua immagine quando pronta */}
+      <PageHeader
+        title="Il Blog di TipsinTrip 🌍"
+        description="Guide, segreti e trucchi nascosti per volare low-cost sfidando l'algoritmo."
+      />
 
       <div className={styles.grid}>
         {allPostsData.map(({ id, date, title, description, coverImage }) => (
