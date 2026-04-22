@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import { LanguageProvider } from './context/LanguageContext';
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
+import { Analytics } from '@vercel/analytics/next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
@@ -45,6 +46,7 @@ export default function RootLayout({
             {children}
             <Footer />
           </LanguageProvider>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
