@@ -72,7 +72,7 @@ export default function AutocompleteInput({
       );
       if (res.ok) {
         const data = await res.json();
-        setSuggestions(data.slice(0, 5));
+        setSuggestions(data.slice(0, 10));
         setIsOpen(true);
       }
     } catch (e) {

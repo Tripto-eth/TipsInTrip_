@@ -27,6 +27,7 @@ export function getSortedGuidesData() {
         title: string;
         description?: string;
         coverImage?: string;
+        images?: string[];
         price?: string;
         lingue?: string;
         tags?: string[];
@@ -83,6 +84,7 @@ export async function getGuideData(slug: string) {
       title: string; 
       description?: string; 
       coverImage?: string;
+      images?: string[];
       price?: string;
       lingue?: string;
     }),

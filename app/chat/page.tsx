@@ -198,7 +198,8 @@ export default function ChatPage() {
     if (!trimmed || isLoading || creditsExhausted) return;
 
     const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: trimmed }];
-    setMessages(nextMessages);
+    // Aggiungiamo in un colpo solo: messaggio utente + placeholder assistant
+    setMessages([...nextMessages, { role: 'assistant', content: '' }]);
     setInput('');
     setIsLoading(true);
 
@@ -208,27 +209,59 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: nextMessages }),
       });
-      const data = await res.json();
 
-      // Aggiorna sempre il contatore se il server lo restituisce
-      if (typeof data.credits === 'number') setCredits(data.credits);
-
-      if (!res.ok || data.error) {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (typeof data.credits === 'number') setCredits(data.credits);
         setMessages((prev) => [
-          ...prev,
+          ...prev.slice(0, -1),
           { role: 'assistant', content: data.creditsExhausted
               ? `⚠️ ${data.error}`
               : `Ops, qualcosa è andato storto: ${data.error || 'errore sconosciuto'}` },
         ]);
-      } else {
-        setMessages((prev) => [...prev, { role: 'assistant', content: data.message || '' }]);
+        return;
       }
+
+      // Leggi i crediti aggiornati dall'header subito (no extra round-trip)
+      const creditsHeader = res.headers.get('X-Credits-Remaining');
+      if (creditsHeader !== null) {
+        const n = parseInt(creditsHeader, 10);
+        if (!Number.isNaN(n)) setCredits(n);
+      }
+
+      // Leggi lo stream chunk per chunk e aggiorna l'ultimo messaggio
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            return [...prev.slice(0, -1), { ...last, content: last.content + chunk }];
+          });
+        }
+      }
+
+      // Stream finito — rileggi i crediti finali (possono essere stati scalati
+      // di più per ricerche multiple in query tematiche)
+      fetch('/api/chat')
+        .then((r) => r.json())
+        .then((d) => { if (typeof d.credits === 'number') setCredits(d.credits); })
+        .catch(() => {});
     } catch (err) {
+      // Preserva il testo già streammato e appendi l'errore in coda
       const msg = err instanceof Error ? err.message : 'errore di rete';
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: `Ops, qualcosa è andato storto: ${msg}` },
-      ]);
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        return [
+          ...prev.slice(0, -1),
+          { ...last, content: `${last.content}\n\n[Connessione interrotta: ${msg}]` },
+        ];
+      });
     } finally {
       setIsLoading(false);
     }

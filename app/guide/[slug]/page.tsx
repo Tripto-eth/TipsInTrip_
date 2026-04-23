@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getGuideData, getAllGuideIds } from '../../../lib/guides';
 // Puoi usare lo stesso CSS del blog se vuoi mantenere la grafica identica
 import styles from '../../blog/blog.module.css'; 
+import PhotoCarousel from '../../components/PhotoCarousel';
+import GuideContactForm from '../../components/GuideContactForm';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
@@ -115,15 +117,19 @@ export default async function GuideProfile({ params }: { params: Promise<{ slug:
           dangerouslySetInnerHTML={{ __html: guideData.contentHtml }}
         />
 
-        {/* Pulsante Call to Action personalizzato */}
-        <div style={{ marginTop: '50px', textAlign: 'center' }}>
-            <a 
-              href={`mailto:tuamail@tipsintrip.com?subject=Richiesta info per tour con ${guideData.title}`}
-              style={{ display: 'inline-block', backgroundColor: '#0070f3', color: 'white', padding: '15px 30px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none' }}
-            >
-              Richiedi un itinerario con {guideData.title}
-            </a>
-        </div>
+        {/* Carosello Immagini prima del bottone */}
+        {guideData.images && guideData.images.length > 0 && (
+          <div style={{ marginTop: '40px', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>Galleria</h3>
+            <div style={{ maxWidth: '400px', margin: '0 auto', borderRadius: '15px', overflow: 'hidden' }}>
+              <PhotoCarousel images={guideData.images} altTitle={guideData.title} />
+            </div>
+          </div>
+        )}
+
+        {/* Modulo di Contatto Avanzato */}
+        <GuideContactForm guideName={guideData.title} destination={guideData.price || ''} />
+
       </article>
     </div>
   );

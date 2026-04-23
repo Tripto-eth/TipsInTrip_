@@ -359,31 +359,8 @@ export default function HomeSearch() {
             <div className={styles.searchClassicBox}>
               <form className={styles.searchFormClassic} onSubmit={handleSearch}>
                 
-                {/* RIGA 1: Origine e Destinazione */}
-                <div className={styles.searchRow}>
-                  <div className={styles.inputGroupBox}>
-                    <AutocompleteInput
-                      id="origin"
-                      label={t.search.origin}
-                      placeholder={t.search.originPlaceholder}
-                      value={origin}
-                      onChange={setOrigin}
-                      required
-                    />
-                  </div>
-                  <div className={styles.inputGroupBox}>
-                    <AutocompleteInput
-                      id="destination"
-                      label={t.search.destination}
-                      placeholder={t.search.destPlaceholder}
-                      value={destination}
-                      onChange={setDestination}
-                    />
-                  </div>
-                </div>
-
-                {/* RIGA 2: Filtri stile Apple (Sopra la barra date) */}
-                <div className={styles.topFiltersContainer}>
+                {/* FILTRI TOP: A/R, Date Flessibili */}
+                <div className={styles.topFiltersContainer} style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
                   <div className={styles.segmentedControl}>
                     <div className={styles.slideIndicator} style={{ transform: isRoundTrip ? 'translateX(100%)' : 'translateX(0%)' }} />
                     <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(false)}>{t.search.oneWay}</button>
@@ -397,52 +374,72 @@ export default function HomeSearch() {
                   </div>
                 </div>
 
-                {/* RIGA 3: Barra unica delle date */}
-                <div className={styles.searchRow}>
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'row' }}>
-                    
-                    {isSpecificDate && (
-                      <div className={styles.inputGroup} style={{ width: '100%' }}>
-                        <MiniDatePicker value={exactDepartDate} onChange={(d) => { setExactDepartDate(d); if (exactReturnDate && d > exactReturnDate) setExactReturnDate(''); }} className={styles.inputField} label="Andata" />
-                        {isRoundTrip && (
-                          <>
-                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
-                            <MiniDatePicker value={exactReturnDate} onChange={setExactReturnDate} minDate={exactDepartDate || undefined} className={styles.inputField} label="Ritorno" />
-                          </>
-                        )}
-                      </div>
-                    )}
+                {/* PILLOLA CENTRALE COMPATTA */}
+                <div className={styles.searchCompactBar}>
+                  <div className={styles.compactInputItem}>
+                    <AutocompleteInput
+                      id="origin"
+                      label={t.search.origin}
+                      placeholder={t.search.originPlaceholder}
+                      value={origin}
+                      onChange={setOrigin}
+                      required
+                    />
+                  </div>
+                  
+                  <div className={styles.compactInputItem}>
+                    <AutocompleteInput
+                      id="destination"
+                      label={t.search.destination}
+                      placeholder={t.search.destPlaceholder}
+                      value={destination}
+                      onChange={setDestination}
+                    />
+                  </div>
 
-                    {!isSpecificDate && (
-                      <div className={styles.inputGroup} style={{ width: '100%' }}>
-                        <MiniRangePicker startDate={flexDepartStart} endDate={flexDepartEnd} onChangeStart={setFlexDepartStart} onChangeEnd={setFlexDepartEnd} className={styles.inputField} label="Andata" />
-                        {isRoundTrip && (
-                          <>
-                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
-                            <MiniRangePicker startDate={flexReturnStart} endDate={flexReturnEnd} onChangeStart={setFlexReturnStart} onChangeEnd={setFlexReturnEnd} className={styles.inputField} label="Ritorno" />
-                          </>
-                        )}
-                      </div>
+                  {/* Date Start */}
+                  <div className={styles.compactInputItem}>
+                    {isSpecificDate ? (
+                      <MiniDatePicker value={exactDepartDate} onChange={(d) => { setExactDepartDate(d); if (exactReturnDate && d > exactReturnDate) setExactReturnDate(''); }} className={styles.inputField} label="Andata" />
+                    ) : (
+                      <MiniRangePicker startDate={flexDepartStart} endDate={flexDepartEnd} onChangeStart={setFlexDepartStart} onChangeEnd={setFlexDepartEnd} className={styles.inputField} label="Andata" />
                     )}
+                  </div>
 
+                  {/* Date End (A/R) */}
+                  {isRoundTrip && (
+                    <div className={styles.compactInputItem}>
+                      {isSpecificDate ? (
+                        <MiniDatePicker value={exactReturnDate} onChange={setExactReturnDate} minDate={exactDepartDate || undefined} className={styles.inputField} label="Ritorno" />
+                      ) : (
+                        <MiniRangePicker startDate={flexReturnStart} endDate={flexReturnEnd} onChangeStart={setFlexReturnStart} onChangeEnd={setFlexReturnEnd} className={styles.inputField} label="Ritorno" />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tasto Cerca (Integrato su Desktop) */}
+                  <div className={`${styles.compactInputItem} ${styles.searchBtnCompactWrapper}`}>
+                    <button type="submit" className={styles.searchBtnCompact} disabled={isLoading}>
+                      {isLoading ? '...' : t.search.searchBtn}
+                    </button>
                   </div>
                 </div>
 
-                {/* RIGA 3.5: Filtri avanzati (solo diretti / prezzo max) */}
-                <div className={styles.searchRow} style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                {/* FILTRI BOTTOM: Solo Diretti, Prezzo Massimo */}
+                <div className={styles.searchRow} style={{ gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
                   <label style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    padding: '0.6rem 0.9rem',
+                    padding: '0.6rem 1rem',
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '10px',
+                    borderRadius: '999px',
                     color: '#fff',
                     fontSize: '0.85rem',
                     cursor: 'pointer',
-                    flex: '1 1 auto',
                     userSelect: 'none',
+                    transition: 'all 0.2s',
                   }}>
                     <input
                       type="checkbox"
@@ -457,11 +454,10 @@ export default function HomeSearch() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    padding: '0.4rem 0.9rem',
+                    padding: '0.4rem 1.2rem',
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '10px',
-                    flex: '1 1 auto',
+                    borderRadius: '999px',
                   }}>
                     <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{t.search.maxPrice}</span>
                     <input
@@ -474,24 +470,15 @@ export default function HomeSearch() {
                       placeholder="es. 300"
                       aria-label="Prezzo massimo in euro"
                       style={{
-                        flex: 1,
                         background: 'transparent',
                         border: 'none',
                         outline: 'none',
                         color: '#fff',
                         fontSize: '0.9rem',
-                        width: '100%',
-                        minWidth: 0,
+                        width: '80px',
                       }}
                     />
                   </div>
-                </div>
-
-                {/* RIGA 3: Pulsante Cerca Voli Isolato */}
-                <div className={styles.buttonRow}>
-                  <button type="submit" className={styles.searchBtnBox} disabled={isLoading}>
-                    {isLoading ? '...' : t.search.searchBtn}
-                  </button>
                 </div>
 
               </form>

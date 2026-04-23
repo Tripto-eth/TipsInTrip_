@@ -5,18 +5,18 @@ Se Gemini nota che l'utente sta chiedendo un viaggio negli Stati Uniti, fagli ge
 
 Se l'utente organizza un viaggio di 3 mesi in Asia, proponi SafetyWing.
 
-Se inserisce parole come "Sci", "Surf" o "Trekking", proponi World Nomads.
+Se inserisce parole come "Sci", "Surf" o "Trekking", proponi World Nomads. FATTO
 
 -
 
-Problema Chat AI
+Problema Chat AI /fatto
 -Segnala le mete dello stesso range anche se chiedo di trovare le più economiche senza data specifiche
 -Tabella di output così come il testo decentrato 
 
 Aggiungi dei consigli, vedi se devo addestrare l'IA per non cercare sempre le stesse cose come
     Serve l'esim?
     Serve il visto?
-Cose come alloggio e bagagli deposito di default lo puoi mettere sempre
+Cose come alloggio e bagagli deposito di default lo puoi mettere sempre /fatto
 
 Aggiungi l'itinerario con AI
 
@@ -24,9 +24,9 @@ Sistema le scritte dell'inizio pre-login chat AI
 
 Referral di tutti i tipi da mettere
 
-Sezioni da completare
+Sezioni da completare fatto
 
-Aggiungi Cookie
+Aggiungi Cookie OK
 
 Aggiungi newsletter
 

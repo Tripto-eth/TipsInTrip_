@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getSortedGuidesData } from '../../lib/guides';
 import styles from '../components/BlogPreview.module.css';
 import PageHeader from '../components/PageHeader';
+import PhotoCarousel from '../components/PhotoCarousel';
 
 const TAG_COLORS = {
   'Tour':        { bg: 'rgba(157,78,221,0.18)', border: 'rgba(157,78,221,0.55)', color: '#c77dff' },
@@ -53,53 +54,48 @@ export default function GuidePage() {
       />
       <section className={styles.section}>
       <div className={styles.grid}>
-        {guides.map(({ id, title, description, coverImage, price, lingue, tags }) => (
+        {guides.map(({ id, title, description, coverImage, images, price, lingue, tags }) => (
           <Link href={`/guide/${id}`} key={id} className={styles.card}>
+            {(images && images.length > 0) ? (
+              <PhotoCarousel images={images} altTitle={title} />
+            ) : coverImage ? (
+              <PhotoCarousel images={[coverImage]} altTitle={title} />
+            ) : null}
             
-            {/* INIZIO MODIFICA IMMAGINE VERTICALE NELLE CARD */}
-            {coverImage && (
-              <div style={{ overflow: 'hidden' }}>
-                <img 
-                  src={coverImage} 
-                  alt={title} 
-                  className={styles.cardImage} 
-                  style={{
-                    aspectRatio: '3/4',  /* Forza il formato verticale per la card */
-                    objectFit: 'cover',  /* Ritaglia senza deformare */
-                    width: '100%',
-                    height: 'auto',      /* Annulla eventuali altezze fisse del CSS */
-                    display: 'block'
-                  }}
-                />
+            <div className={styles.cardBody} style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '1.25rem', background: 'rgba(36, 0, 70, 0.4)' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                <h3 className={styles.cardTitle} style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{title}</h3>
+                <span style={{ fontSize: '1.1rem', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
+                  {lingue}
+                </span>
               </div>
-            )}
-            {/* FINE MODIFICA */}
-            
-            <div className={styles.cardBody}>
-              <h3 className={styles.cardTitle}>{title}</h3>
+
               {Array.isArray(tags) && tags.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
                   {tags.map((tag) => <TagBadge key={tag} label={tag} />)}
                 </div>
               )}
 
-              {description && <p className={styles.cardDesc}>{description}</p>}
+              {description && (
+                <p className={styles.cardDesc} style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, marginBottom: '1rem', flex: 1 }}>
+                  {description}
+                </p>
+              )}
               
               <div style={{ 
                 marginTop: 'auto', 
-                paddingTop: '15px', 
+                paddingTop: '1rem', 
                 display: 'flex', 
-                justifyContent: 'space-between', 
+                alignItems: 'center',
+                gap: '0.5rem',
                 fontSize: '0.85rem', 
-                color: '#666',
-                borderTop: '1px solid #f0f0f0' 
+                color: 'rgba(255,255,255,0.9)',
+                borderTop: '1px dashed rgba(255,255,255,0.15)',
+                fontWeight: 600
               }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  📍 {price}
-                </span>
-                <span style={{ fontWeight: '600' }}>
-                  {lingue}
-                </span>
+                <span aria-hidden>📍</span>
+                <span>{price}</span>
               </div>
             </div>
           </Link>

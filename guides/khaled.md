@@ -2,6 +2,7 @@
 title: "Khaled"
 description: "Il tuo Local Expert al Cairo"
 coverImage: "/khaled.jpeg"
+images: ["/khaled.jpeg", "https://images.unsplash.com/photo-1512100356356-de1b84283e18?auto=format&fit=crop&q=80&w=800&h=1000", "https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&q=80&w=800&h=1000"]
 price: "Il Cairo, Egitto"
 lingue: "🇮🇹 🇬🇧 🇪🇬"
 tags: ["Tour", "Guide", "Local Vibes"]

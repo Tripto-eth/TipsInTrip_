@@ -176,3 +176,35 @@ input {
     display: none !important;
   }
 }
+
+/* =========================================
+   MOBILE & UX OPTIMIZATIONS
+   ========================================= */
+
+/* Prevent 300ms tap delay on mobile devices */
+button, a, input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS Safari from auto-zooming when focusing inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Custom Scrollbar for chat and global */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

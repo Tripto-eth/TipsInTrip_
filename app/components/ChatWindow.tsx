@@ -77,6 +77,7 @@ export default function ChatWindow({ messages, isLoading }: ChatWindowProps) {
             fontSize: '0.9rem',
             lineHeight: 1.5,
             wordBreak: 'break-word',
+            textAlign: 'left',
           }}
         >
           {m.role === 'user' ? (
@@ -134,6 +135,7 @@ export default function ChatWindow({ messages, isLoading }: ChatWindowProps) {
                       padding: '0.5rem 0.6rem',
                       borderBottom: '1px solid rgba(255,255,255,0.06)',
                       verticalAlign: 'middle',
+                      textAlign: 'left',
                     }}>
                       {children}
                     </td>
