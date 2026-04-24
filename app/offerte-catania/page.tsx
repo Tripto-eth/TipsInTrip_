@@ -12,6 +12,7 @@ export default function OfferteCataniaPage() {
       <PageHeader
         title="🔥 Offerte da Catania"
         description="I voli più economici in partenza da Fontanarossa (CTA)."
+        bgImage="https://images.pexels.com/photos/17650773/pexels-photo-17650773/free-photo-of-etna-over-catania-city.jpeg"
       />
       <div style={{ textAlign: 'center', padding: '4rem 1rem', opacity: 0.7, maxWidth: '600px', margin: '0 auto' }}>
         <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'rgba(255,255,255,0.9)' }}>

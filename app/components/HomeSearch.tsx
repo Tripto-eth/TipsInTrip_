@@ -39,10 +39,6 @@ function FlightCardItem({ flight }: { flight: Flight }) {
   return (
     <div className={styles.flightCard}>
       <div className={styles.flightMain}>
-        <div className={styles.airlineInfo}>
-          <span className={styles.airlineName}>🏷️ {flight.airline}</span>
-        </div>
-
         <div className={styles.routeLocations}>{flight.route}</div>
 
         <div style={{ display: 'flex', gap: '1rem', margin: '0.75rem 0', flexWrap: 'wrap' }}>
@@ -144,7 +140,7 @@ export default function HomeSearch() {
   const [destination, setDestination] = useState('');
 
   const [isRoundTrip, setIsRoundTrip] = useState(false);
-  const [isSpecificDate, setIsSpecificDate] = useState(false);
+  const [isSpecificDate, setIsSpecificDate] = useState(true);
 
   // STATI DATE FLESSIBILI (Range Da-A)
   const [flexDepartStart, setFlexDepartStart] = useState('');
@@ -178,6 +174,7 @@ export default function HomeSearch() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [relaxedDirect, setRelaxedDirect] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,12 +183,25 @@ export default function HomeSearch() {
     setIsLoading(true);
     setHasSearched(true);
     setError(null);
-    setFlights([]); 
+    setFlights([]);
+    setRelaxedDirect(false);
 
     try {
       const params = new URLSearchParams();
       params.append('origin', origin);
-      if (destination) params.append('destination', destination);
+
+      // "Ovunque" ha 3 varianti: anywhere (tutto), anywhere-italy (solo Italia), anywhere-foreign (solo estero).
+      // Normalizziamo: destination='anywhere' + scope dedicato per il backend.
+      let destToSend = destination;
+      if (destination === 'anywhere-italy') {
+        destToSend = 'anywhere';
+        params.append('anywhereScope', 'italy');
+      } else if (destination === 'anywhere-foreign') {
+        destToSend = 'anywhere';
+        params.append('anywhereScope', 'foreign');
+      }
+      if (destToSend) params.append('destination', destToSend);
+
       params.append('isRoundTrip', isRoundTrip.toString());
       params.append('isSpecificDate', isSpecificDate.toString());
       if (directOnly) params.append('directOnly', 'true');
@@ -227,6 +237,7 @@ export default function HomeSearch() {
       }
       
       setFlights(data.data || []);
+      setRelaxedDirect(Boolean(data.relaxed));
       
     } catch (err: unknown) {
       console.error('Error fetching flights:', err);
@@ -368,9 +379,9 @@ export default function HomeSearch() {
                   </div>
 
                   <div className={styles.segmentedControl}>
-                    <div className={styles.slideIndicator} style={{ transform: isSpecificDate ? 'translateX(100%)' : 'translateX(0%)' }} />
-                    <button type="button" className={`${styles.segmentBtn} ${!isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(false)}>{t.search.flexMonth}</button>
+                    <div className={styles.slideIndicator} style={{ transform: isSpecificDate ? 'translateX(0%)' : 'translateX(100%)' }} />
                     <button type="button" className={`${styles.segmentBtn} ${isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(true)}>{t.search.exactDate}</button>
+                    <button type="button" className={`${styles.segmentBtn} ${!isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(false)}>{t.search.flexMonth}</button>
                   </div>
                 </div>
 
@@ -394,6 +405,7 @@ export default function HomeSearch() {
                       placeholder={t.search.destPlaceholder}
                       value={destination}
                       onChange={setDestination}
+                      allowAnywhere
                     />
                   </div>
 
@@ -493,6 +505,21 @@ export default function HomeSearch() {
           <div className={`${styles.emptyState} animate-fade-in`}>
             <h3>Ops!</h3>
             <p>{error}</p>
+          </div>
+        )}
+
+        {!isLoading && hasSearched && !error && relaxedDirect && flights.length > 0 && (
+          <div style={{
+            padding: '0.7rem 1rem',
+            marginBottom: '0.75rem',
+            borderRadius: '10px',
+            background: 'rgba(245,158,11,0.12)',
+            border: '1px solid rgba(245,158,11,0.35)',
+            color: '#fcd34d',
+            fontSize: '0.85rem',
+            textAlign: 'center',
+          }}>
+            ⚠️ Non abbiamo trovato voli diretti per questa ricerca. Ti mostriamo le opzioni disponibili (potrebbero avere scali).
           </div>
         )}
 

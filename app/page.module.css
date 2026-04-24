@@ -140,6 +140,12 @@
   z-index: 10;
 }
 
+@media (min-width: 1024px) {
+  .searchContainer {
+    max-width: 1120px; /* più spazio su desktop, soprattutto quando è A/R (5 colonne) */
+  }
+}
+
 .searchClassicBox {
   background: rgba(36, 0, 70, 0.3);
   backdrop-filter: blur(10px);
@@ -281,6 +287,17 @@
 .searchBtnCompactWrapper {
   display: flex;
   padding: 6px;
+}
+
+/* Su desktop, il bottone non deve rubare spazio agli input (soprattutto in roundtrip a 5 colonne) */
+@media (min-width: 1024px) {
+  .searchBtnCompactWrapper {
+    flex: 0 0 auto;
+    min-width: 140px;
+  }
+  .searchBtnCompactWrapper .searchBtnCompact {
+    padding: 0 1.5rem;
+  }
 }
 
 .searchBtnCompact {

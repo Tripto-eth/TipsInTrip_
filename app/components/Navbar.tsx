@@ -61,9 +61,6 @@ export default function Navbar() {
   <Link href="/blog" className={styles.navLink}>
     {t.nav.blog}
   </Link>
-  <Link href="/essentials" className={styles.navLink}>
-    {t.nav.essentials}
-  </Link>
 </div>
         </div>
         <div className={styles.navCenter} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -188,9 +185,6 @@ export default function Navbar() {
             </Link>
             <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               {t.nav.blog}
-            </Link>
-            <Link href="/essentials" onClick={() => setMobileMenuOpen(false)} style={{ padding: '0.9rem 0.5rem', color: '#fff', fontWeight: 500, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {t.nav.essentials}
             </Link>
             <Link
               href="/chat"

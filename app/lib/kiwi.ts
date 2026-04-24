@@ -3,6 +3,7 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 
 const KIWI_MCP_URL = 'https://mcp.kiwi.com/';
 const DEFAULT_MAX_RESULTS = 5;
+const KIWI_API_HARD_LIMIT = 1000; // Tequila/Kiwi cap
 
 export interface KiwiSearchArgs {
   flyFrom: string;
@@ -18,6 +19,8 @@ export interface KiwiSearchArgs {
   locale?: string;
   maxResults?: number;
   directFlightsOnly?: boolean;
+  /** Numero di risultati richiesti all'API Kiwi (cap server-side). Default: 1000 (max consentito). */
+  limit?: number;
 }
 
 export interface CleanLeg {
@@ -117,7 +120,9 @@ function cleanOne(raw: RawFlight, passengers?: KiwiSearchArgs['passengers']): Cl
 export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlight[]> {
   const client = new Client({ name: 'tipsintrip', version: '0.1.0' }, { capabilities: {} });
   const transport = new SSEClientTransport(new URL(KIWI_MCP_URL));
-  const { maxResults = DEFAULT_MAX_RESULTS, directFlightsOnly, ...toolArgs } = args;
+  const { maxResults = DEFAULT_MAX_RESULTS, directFlightsOnly, limit, ...toolArgs } = args;
+  // Richiediamo il massimo possibile al server Kiwi (default = hard limit)
+  const serverLimit = Math.min(limit ?? KIWI_API_HARD_LIMIT, KIWI_API_HARD_LIMIT);
 
   try {
     await client.connect(transport);
@@ -127,6 +132,7 @@ export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlig
         sort: 'price',
         curr: 'EUR',
         locale: 'it',
+        limit: serverLimit,
         ...(directFlightsOnly ? { directFlights: 1 } : {}),
         ...toolArgs,
       },

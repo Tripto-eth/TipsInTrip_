@@ -1,58 +1,63 @@
-import Link from 'next/link';
 import { getSortedPostsData } from '../../lib/posts';
+import { getSortedEssentialsData } from '../../lib/essentials';
 import styles from './blog.module.css';
 import PageHeader from '../components/PageHeader';
+import BlogClient, { type BlogItem } from './BlogClient';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
 export const metadata = {
-  title: 'Blog - TipsinTrip',
-  description: 'Scopri i migliori trucchi, guide e segreti per viaggiare senza svuotare il portafoglio.',
+  title: 'Itinerari & Consigli - TipsinTrip',
+  description: 'Itinerari, consigli e essenziali da viaggio: tutto quello che serve per volare low-cost e viaggiare sereni.',
   alternates: { canonical: `${SITE_URL}/blog` },
   openGraph: {
-    title: 'Blog - TipsinTrip',
-    description: 'Scopri i migliori trucchi, guide e segreti per viaggiare senza svuotare il portafoglio.',
+    title: 'Itinerari & Consigli - TipsinTrip',
+    description: 'Itinerari, consigli e essenziali da viaggio.',
     url: `${SITE_URL}/blog`,
     siteName: 'TipsinTrip',
     locale: 'it_IT',
     type: 'website',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Blog - TipsinTrip',
-    description: 'Scopri i migliori trucchi, guide e segreti per viaggiare senza svuotare il portafoglio.',
-  },
 };
 
 export default function Blog() {
-  const allPostsData = getSortedPostsData();
+  const posts = getSortedPostsData();
+  const essentials = getSortedEssentialsData();
+
+  const items: BlogItem[] = [
+    ...posts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      coverImage: p.coverImage,
+      date: p.date,
+      type: (p.type || 'consiglio') as 'itinerario' | 'consiglio',
+      href: `/blog/${p.id}`,
+    })),
+    ...essentials.map((e) => ({
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      coverImage: e.coverImage,
+      date: e.date,
+      type: 'essenziale' as const,
+      href: `/essentials/${e.id}`,
+      category: e.category,
+      price: e.price,
+      featured: e.featured,
+    })),
+  ];
 
   return (
-    <div className={styles.container}>
-      {/* bgImage="/headers/blog.jpg" — aggiungi la tua immagine quando pronta */}
+    <>
       <PageHeader
-        title="Il Blog di TipsinTrip 🌍"
-        description="Guide, segreti e trucchi nascosti per volare low-cost sfidando l'algoritmo."
+        title="Itinerari & Consigli 🌍"
+        description="Guide, itinerari, trucchi low-cost e tutti gli essenziali per viaggiare sereni."
+        bgImage="https://giver.it/fileadmin/_processed_/3/e/csm_giver_crociere-antartide-esploratori_header_93c8fea40b.jpg"
       />
-
-      <div className={styles.grid}>
-        {allPostsData.map(({ id, date, title, description, coverImage }) => (
-          <Link href={`/blog/${id}`} key={id} className={styles.postCard}>
-            {coverImage && (
-              <img src={coverImage} alt={title} className={styles.postImage} />
-            )}
-            <h2 className={styles.postTitle}>{title}</h2>
-            {description && <p className={styles.postDesc}>{description}</p>}
-            <small className={styles.postDate}>
-              {new Date(date).toLocaleDateString('it-IT', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </small>
-          </Link>
-        ))}
+      <div className={styles.container}>
+        <BlogClient items={items} />
       </div>
-    </div>
+    </>
   );
 }

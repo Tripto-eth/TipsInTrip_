@@ -195,6 +195,7 @@ export default function MultiDepartureSearch() {
       <PageHeader
         title="Multi-Partenze"
         description="Parti insieme ai tuoi amici, parenti o partner anche se siete in città diverse. Inserisci fino a 6 aeroporti e trova le combinazioni migliori per prezzo o per arrivare tutti quasi insieme."
+        bgImage="https://images-dom.prod.aws.idp-connect.com/commimg/myhotcourses/institution/myhc_378471.jpg"
       />
       <section className={styles.heroSection} style={{ paddingTop: '2rem', backgroundImage: 'none', background: 'transparent' }}>
         <div className={`${styles.searchContainer} delay-100 animate-fade-in`}>

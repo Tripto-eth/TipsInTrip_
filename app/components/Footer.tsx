@@ -20,16 +20,10 @@ export default function Footer() {
     {
       heading: t.footer.col2,
       items: [
-        { label: t.footer.links.itinerari, href: '/itinerari' },
-        { label: t.footer.links.consigli, href: '/consigli' },
+        { label: t.footer.links.itinerari, href: '/blog' },
+        { label: t.footer.links.consigli, href: '/blog' },
         { label: t.footer.links.guide, href: '/guide' },
         { label: t.footer.links.blog, href: '/blog' },
-      ],
-    },
-    {
-      heading: t.footer.col3,
-      items: [
-        { label: t.footer.links.essentials, href: '/essentials' },
       ],
     },
   ];

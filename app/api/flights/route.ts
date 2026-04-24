@@ -1,24 +1,37 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { searchKiwiFlights, type CleanFlight } from '../../lib/kiwi';
 
 // ==============================================================================
-// 1. CONFIGURAZIONI GLOBALI
+// CONFIG
 // ==============================================================================
-// Definiamo i parametri per la cache: quanto tempo conservare i risultati per non abusare delle API.
 const AUTOCOMPLETE_BASE = 'https://autocomplete.travelpayouts.com/places2';
-const PRICES_TTL = 60 * 30;        // Cache dei Prezzi a 30 minuti
-const PLACES_TTL = 60 * 60 * 24;   // Cache delle Città/IATA a 24 ore
+const PRICES_TTL = 60 * 30;        // 30 min
+const PLACES_TTL = 60 * 60 * 24;   // 24h
 
 // ==============================================================================
-// 2. INTERFACCE TYPESCRIPT
-// Queste interfacce descrivono la 'forma' o 'struttura' dei dati con cui lavoriamo
+// TIPI (output UI)
 // ==============================================================================
+interface UIFlight {
+  id: string;
+  route: string;
+  airline: string;
+  price: number;
+  depart_date: string;
+  return_date: string | null;
+  isRoundTrip: boolean;
+  duration_out_str: string;
+  duration_back_str: string;
+  stops_out: number;
+  stops_back: number;
+  deepLink: string;
+}
+
 interface Place {
   code: string;
   name: string;
+  type?: string;
 }
 
-// Struttura del Volo restituito dalla piattaforma di base Aviasales
 interface AviasalesFlight {
   origin: string;
   destination: string;
@@ -30,276 +43,705 @@ interface AviasalesFlight {
   number_of_changes?: number;
 }
 
+type AnywhereScope = 'all' | 'italy' | 'foreign';
+
+interface SearchParams {
+  origin: string;
+  destination: string;
+  isRoundTrip: boolean;
+  isSpecificDate: boolean;
+  exactDepartDate: string | null;
+  exactReturnDate: string | null;
+  flexDepartStart: string | null;
+  flexDepartEnd: string | null;
+  flexReturnStart: string | null;
+  flexReturnEnd: string | null;
+  directOnly: boolean;
+  anywhereScope: AnywhereScope;
+}
+
 // ==============================================================================
-// 3. FUNZIONI DI UTILITÀ PER I NOMI DELLE CITTÀ
+// UTILITIES
 // ==============================================================================
-// Questa funzione prende una stringa (es. 'Italia' o 'Roma') e chiede ad Aviasales
-// il suo codice di 3 lettere (es. 'IT' o 'ROM'). Indispensabile per le query aeree.
+async function lookupPlace(term: string): Promise<Place | null> {
+  if (!term) return null;
+  try {
+    const url = `${AUTOCOMPLETE_BASE}?term=${encodeURIComponent(term)}&locale=it&types[]=city&types[]=airport&types[]=country`;
+    const res = await fetch(url, { next: { revalidate: PLACES_TTL } });
+    if (res.ok) {
+      const data: Place[] = await res.json();
+      if (data && data.length > 0) return data[0];
+    }
+  } catch {}
+  return null;
+}
+
 async function getIataCode(term: string): Promise<string> {
   if (!term) return '';
-  // Se è già un codice di 2 o 3 lettere tutto maiuscolo (es. IT o ROM), lo usiamo direttamente.
   if ((term.length === 3 || term.length === 2) && term === term.toUpperCase()) return term;
-
-  try {
-    const url = `${AUTOCOMPLETE_BASE}?term=${encodeURIComponent(term)}&locale=it&types[]=city&types[]=airport&types[]=country`;
-    const res = await fetch(url, { next: { revalidate: PLACES_TTL } });
-    if (res.ok) {
-      const data: Place[] = await res.json();
-      if (data && data.length > 0 && data[0].code) {
-        return data[0].code;
-      }
-    }
-  } catch (e) {
-    console.error('Errore nell autocomplete:', term, e);
-  }
-  return term.toUpperCase(); // Fallback se la chiamata fallisce
+  const place = await lookupPlace(term);
+  return place?.code || term.toUpperCase();
 }
 
-// Analoga alla funzione precedente, ma invece del codice restituisce il nome in chiaro (es. "Milano")
 async function getPlaceName(term: string): Promise<string> {
   if (!term) return '';
-  try {
-    const url = `${AUTOCOMPLETE_BASE}?term=${encodeURIComponent(term)}&locale=it&types[]=city&types[]=airport&types[]=country`;
-    const res = await fetch(url, { next: { revalidate: PLACES_TTL } });
-    if (res.ok) {
-      const data: Place[] = await res.json();
-      if (data && data.length > 0) {
-        return data[0].name;
-      }
-    }
-  } catch (e) {}
-  return term.toUpperCase();
+  const place = await lookupPlace(term);
+  return place?.name || term.toUpperCase();
+}
+
+function isoToDdmmyyyy(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function daysBetween(startIso: string, endIso: string): number {
+  const s = Date.parse(startIso + 'T00:00:00Z');
+  const e = Date.parse(endIso + 'T00:00:00Z');
+  if (!s || !e) return 0;
+  return Math.round((e - s) / 86400000);
+}
+
+function middleDate(startIso: string, endIso: string): string {
+  const s = Date.parse(startIso + 'T00:00:00Z');
+  const e = Date.parse(endIso + 'T00:00:00Z');
+  return new Date((s + e) / 2).toISOString().split('T')[0];
+}
+
+function minutesToStr(mins: number): string {
+  if (!mins || mins <= 0) return 'N/D';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${m}m`;
+}
+
+// Country-level searches (es. "IT", "US") vanno dirette su Aviasales:
+// Kiwi MCP gestisce invece bene sia città/aeroporti che 'anywhere'.
+function isBroadSearch(params: SearchParams): boolean {
+  const { origin, destination } = params;
+  if (origin.length === 2) return true;
+  // "anywhere" va bene per Kiwi, non è broad
+  if (destination && destination.length === 2 && destination.toLowerCase() !== 'anywhere') return true;
+  return false;
 }
 
 // ==============================================================================
-// 4. LOGICA MOTORE DI RICERCA VOLI "NATIVA" CORE
-// Funzione pura sganciata dall'API Next.js, serve per essere usata come "Strumento" (Tool) da Gemini
+// KIWI SEARCH — motore primario per rotte airport-to-airport
 // ==============================================================================
-async function internalSearchFlights(params: any): Promise<any> {
-    const { 
-        origin: rawOrig, 
-        destination: rawDest, 
-        isRoundTrip, 
-        isSpecificDate, 
-        exactDepartDate, 
-        exactReturnDate,
-        flexDepartStart,
-        flexDepartEnd,
-        flexReturnStart,
-        flexReturnEnd
-    } = params;
-    
-    // Le chiavi delle API di volo dal file .env.local
-    const token = process.env.AVIASALES_API_TOKEN;
-    const marker = process.env.AVIASALES_MARKER;
-    if (!token) throw new Error('API token Aviasales non configurato');
 
-    // Mappo l'origine passata (es "Roma") nel suo rispettivo codice formato IATA ("ROM")
-    const origin = await getIataCode(rawOrig);
-    const destination = rawDest ? await getIataCode(rawDest) : null;
-    
-    let arrayVoli: AviasalesFlight[] = [];
+// Destinazioni popolari usate per espandere "anywhere" in chiamate Kiwi specifiche.
+// Kiwi MCP non gestisce bene il valore letterale "anywhere", quindi facciamo fan-out.
 
-    // Metodo helper interno per scaricare voli di sola andata dalla piattaforma
-    const fetchLatestOneWay = async (orig: string, dest: string): Promise<AviasalesFlight[]> => {
-      const u = new URL('https://api.travelpayouts.com/v2/prices/latest');
-      u.searchParams.append('currency', 'eur');
-      u.searchParams.append('origin', orig);
-      u.searchParams.append('destination', dest);
-      u.searchParams.append('limit', '1000');
-      u.searchParams.append('one_way', 'true');
-      const r = await fetch(u.toString(), { headers: { 'x-access-token': token }, next: { revalidate: PRICES_TTL } });
-      if (!r.ok) throw new Error(`status ${r.status}`);
-      const j = await r.json();
-      if (!j.success || !Array.isArray(j.data)) return [];
-      return j.data as AviasalesFlight[];
-    };
-    
-    // Controllo se una data si trova nel mezzo di due limiti (per la ricerca Flessibile)
-    const inRange = (date: string | undefined, start: string | null, end: string | null): boolean => {
-      if (!date || !start || !end) return true;
-      const ts = new Date(date).getTime();
-      return ts >= new Date(start).getTime() && ts <= new Date(end + 'T23:59:59').getTime();
-    };
+// 🇮🇹 Aeroporti italiani — usati quando l'utente sceglie "Ovunque in Italia"
+const ITALIAN_AIRPORTS = [
+  'FCO', // Roma Fiumicino
+  'CIA', // Roma Ciampino
+  'MXP', // Milano Malpensa
+  'LIN', // Milano Linate
+  'BGY', // Milano Bergamo (Orio al Serio)
+  'VCE', // Venezia Marco Polo
+  'TSF', // Venezia Treviso
+  'NAP', // Napoli Capodichino
+  'CTA', // Catania Fontanarossa
+  'PMO', // Palermo Punta Raisi
+  'TPS', // Trapani Birgi
+  'CIY', // Comiso
+  'LMP', // Lampedusa
+  'PNL', // Pantelleria
+  'BLQ', // Bologna
+  'BRI', // Bari
+  'BDS', // Brindisi
+  'PSA', // Pisa
+  'FLR', // Firenze
+  'CAG', // Cagliari
+  'OLB', // Olbia
+  'AHO', // Alghero
+  'TRN', // Torino
+  'CUF', // Cuneo
+  'VRN', // Verona
+  'GOA', // Genova
+  'SUF', // Lamezia Terme
+  'REG', // Reggio Calabria
+  'CRV', // Crotone
+  'PSR', // Pescara
+  'AOI', // Ancona
+  'PEG', // Perugia
+  'RMI', // Rimini
+  'TRS', // Trieste
+  'BZO', // Bolzano
+];
 
-    if (isRoundTrip && destination) {
-       // Se è un viaggio di andata E ritorno, l'algoritmo fa 2 richieste sparate: Andata + Ritorno
-       const [outbound, inbound] = await Promise.all([
-           fetchLatestOneWay(origin, destination),
-           fetchLatestOneWay(destination, origin),
-       ]);
-       
-       // Filtra e pulisce i voli di andata per rientrare nelle date richieste
-       let outFiltered = outbound;
-       if (isSpecificDate && exactDepartDate) outFiltered = outFiltered.filter(f => f.depart_date === exactDepartDate);
-       else if (!isSpecificDate) outFiltered = outFiltered.filter(f => inRange(f.depart_date, flexDepartStart, flexDepartEnd));
-       
-       // Filtra i voli di ritorno
-       let inFiltered = inbound;
-       if (isSpecificDate && exactReturnDate) inFiltered = inFiltered.filter(f => f.depart_date === exactReturnDate);
-       else if (!isSpecificDate) inFiltered = inFiltered.filter(f => inRange(f.depart_date, flexReturnStart, flexReturnEnd));
-       
-       // Accoppiamento dei voli logico
-       for (const out of outFiltered) {
-         let cheapest: AviasalesFlight | null = null;
-         const outTs = new Date(out.depart_date).getTime();
-         for(const ret of inFiltered) {
-             if(new Date(ret.depart_date).getTime() < outTs) continue; // il volo di ritorno non può avvenire prima dell'andata
-             if (!cheapest || ret.value < cheapest.value) cheapest = ret;
-         }
-         if(cheapest) {
-             arrayVoli.push({
-                 origin: out.origin,
-                 destination: out.destination,
-                 depart_date: out.depart_date,
-                 return_date: cheapest.depart_date,
-                 value: out.value + cheapest.value, // Prezzo finale unito
-                 duration: (out.duration || 0) + (cheapest.duration || 0),
-                 gate: out.gate === cheapest.gate ? out.gate : `${out.gate} / ${cheapest.gate}`,
-                 number_of_changes: Math.max(out.number_of_changes || 0, cheapest.number_of_changes || 0)
-             });
-         }
-       }
-    } else if (destination) {
-       // Cerca solo andata base
-       let voli = await fetchLatestOneWay(origin, destination);
-       if (isSpecificDate && exactDepartDate) arrayVoli = voli.filter(f => f.depart_date === exactDepartDate);
-       else if (!isSpecificDate) arrayVoli = voli.filter(f => inRange(f.depart_date, flexDepartStart, flexDepartEnd));
-       else arrayVoli = voli;
+// 🌍 Aeroporti esteri — usati quando l'utente sceglie "Ovunque all'estero"
+const FOREIGN_AIRPORTS = [
+  // ==========================================
+  // 🇪🇺 TUTTE LE CAPITALI EUROPEE
+  // ==========================================
+  'LHR', 'LGW', 'STN', 'LTN', // Londra (UK)
+  'CDG', 'ORY', 'BVA', // Parigi (Francia)
+  'BER', // Berlino (Germania)
+  'MAD', // Madrid (Spagna)
+  'AMS', // Amsterdam (Paesi Bassi)
+  'VIE', // Vienna (Austria)
+  'PRG', // Praga (Repubblica Ceca)
+  'BUD', // Budapest (Ungheria)
+  'ATH', // Atene (Grecia)
+  'LIS', // Lisbona (Portogallo)
+  'DUB', // Dublino (Irlanda)
+  'BRU', 'CRL', // Bruxelles / Charleroi (Belgio)
+  'CPH', // Copenhagen (Danimarca)
+  'ARN', 'NYO', // Stoccolma (Svezia)
+  'OSL', // Oslo (Norvegia)
+  'HEL', // Helsinki (Finlandia)
+  'WAW', 'WMI', // Varsavia (Polonia)
+  'OTP', // Bucarest (Romania)
+  'SOF', // Sofia (Bulgaria)
+  'BEG', // Belgrado (Serbia)
+  'ZAG', // Zagabria (Croazia)
+  'LJU', // Lubiana (Slovenia)
+  'BTS', // Bratislava (Slovacchia)
+  'TIA', // Tirana (Albania)
+  'SJJ', // Sarajevo (Bosnia)
+  'SKP', // Skopje (Macedonia del Nord)
+  'TGD', // Podgorica (Montenegro)
+  'KIV', // Chisinau (Moldavia)
+  'RIX', // Riga (Lettonia)
+  'VNO', // Vilnius (Lituania)
+  'TLL', // Tallinn (Estonia)
+  'KEF', // Reykjavik (Islanda)
+  'LUX', // Lussemburgo
+  'MLA', // Malta
+  'LCA', 'PFO', // Cipro (Larnaca/Paphos - Nicosia non ha aeroporto)
+
+  // ==========================================
+  // ✈️ DIRETTI DA CATANIA (RYANAIR & WIZZ AIR)
+  // Non già inclusi in Italia o Capitali
+  // ==========================================
+  
+  // SPAGNA
+  'BCN', // Barcellona
+  'SVQ', // Siviglia
+  'AGP', // Malaga
+  'VLC', // Valencia
+  'PMI', // Palma di Maiorca
+  'IBZ', // Ibiza
+  
+  // GERMANIA
+  'MUC', // Monaco di Baviera
+  'FRA', // Francoforte
+  'HHN', // Francoforte Hahn
+  'CGN', // Colonia
+  'DUS', // Dusseldorf
+  'NRN', // Dusseldorf Weeze
+  'HAM', // Amburgo
+  'FMM', // Memmingen
+  'NUE', // Norimberga
+  'DTM', // Dortmund
+  'STR', // Stoccarda
+  
+  // FRANCIA
+  'MRS', // Marsiglia
+  'LDE', // Lourdes
+  'TLS', // Tolosa
+  'BOD', // Bordeaux
+  
+  // EUROPA DELL'EST
+  'KRK', // Cracovia (Polonia)
+  'KTW', // Katowice (Polonia)
+  'WRO', // Breslavia (Polonia)
+  'CLJ', // Cluj-Napoca (Romania)
+  'IAS', // Iasi (Romania)
+  'TSR', // Timisoara (Romania)
+  
+  // BENELUX E SVIZZERA
+  'EIN', // Eindhoven (Paesi Bassi)
+  'BSL', // Basilea (Svizzera)
+  'ZRH', // Zurigo (Svizzera)
+  'GVA', // Ginevra (Svizzera)
+  
+  // EXTRA-UE (Diretti Low Cost da Catania)
+  'TLV', // Tel Aviv (Israele)
+  'SSH', // Sharm el-Sheikh (Egitto)
+  'CAI'  // Il Cairo (Egitto)
+];
+
+// Estrae da un SearchParams la data centrale + flex range (per Kiwi)
+function computeKiwiDates(params: SearchParams): { depDate: string; depFlex: number; retDate?: string; retFlex: number } {
+  let depDate: string;
+  let depFlex = 0;
+  if (params.isSpecificDate && params.exactDepartDate) {
+    depDate = params.exactDepartDate;
+  } else if (params.flexDepartStart && params.flexDepartEnd) {
+    depDate = middleDate(params.flexDepartStart, params.flexDepartEnd);
+    const span = daysBetween(params.flexDepartStart, params.flexDepartEnd);
+    depFlex = Math.min(3, Math.max(0, Math.floor(span / 2)));
+  } else if (params.flexDepartStart) {
+    depDate = params.flexDepartStart;
+  } else {
+    throw new Error('Data di partenza non specificata');
+  }
+
+  let retDate: string | undefined;
+  let retFlex = 0;
+  if (params.isRoundTrip) {
+    if (params.isSpecificDate && params.exactReturnDate) {
+      retDate = params.exactReturnDate;
+    } else if (params.flexReturnStart && params.flexReturnEnd) {
+      retDate = middleDate(params.flexReturnStart, params.flexReturnEnd);
+      const span = daysBetween(params.flexReturnStart, params.flexReturnEnd);
+      retFlex = Math.min(3, Math.max(0, Math.floor(span / 2)));
+    } else if (params.flexReturnStart) {
+      retDate = params.flexReturnStart;
     }
-    
-    // Preparazione dei link per l'acquisto sul portale vero e proprio
-    const formatLinkDate = (d: string) => {
-      if (!d) return '';
-      const parts = d.split('-');
-      return parts.length === 3 ? `${parts[2]}${parts[1]}` : '';
-    };
+  }
 
-    const uniqueIatas = new Set<string>();
-    uniqueIatas.add(origin);
-    if(destination) uniqueIatas.add(destination);
-    
-    const iataNames = new Map<string, string>();
-    await Promise.all(
-      Array.from(uniqueIatas).map(async (iata) => iataNames.set(iata, await getPlaceName(iata)))
+  return { depDate, depFlex, retDate, retFlex };
+}
+
+// Seleziona la lista di IATA di destinazione in base allo scope scelto.
+function getAnywhereTargets(scope: AnywhereScope): string[] {
+  if (scope === 'italy') return ITALIAN_AIRPORTS;
+  if (scope === 'foreign') return FOREIGN_AIRPORTS;
+  return [...ITALIAN_AIRPORTS, ...FOREIGN_AIRPORTS];
+}
+
+// Fan-out su destinazioni popolari quando l'utente chiede "Ovunque".
+// Kiwi MCP non supporta realmente "anywhere" → facciamo N chiamate parallele
+// e uniamo i risultati ordinati per prezzo.
+async function kiwiSearchAnywhere(origin: string, params: SearchParams): Promise<UIFlight[]> {
+  const { depDate, depFlex, retDate, retFlex } = computeKiwiDates(params);
+
+  const targets = getAnywhereTargets(params.anywhereScope);
+
+  const calls = targets
+    .filter((iata: string) => iata !== origin) // salta l'origine
+    .map((dest: string) =>
+      searchKiwiFlights({
+        flyFrom: origin,
+        flyTo: dest,
+        departureDate: isoToDdmmyyyy(depDate),
+        departureDateFlexRange: depFlex || undefined,
+        returnDate: retDate ? isoToDdmmyyyy(retDate) : undefined,
+        returnDateFlexRange: retFlex || undefined,
+        limit: 30,
+        maxResults: 5, // top 5 per destinazione = max 70 voli totali
+        passengers: { adults: 1 },
+        directFlightsOnly: params.directOnly || undefined,
+      }).catch(() => [] as CleanFlight[]),
     );
 
-    // Trasformiamo i voli grezzi in voli "Puliti e Belli" come li vuole la UI HomeSearch.tsx
-    const finalFlightsList = arrayVoli.map((flight, index) => {
-      const durSec = (flight.duration || 0) * 60;
-      const durH = Math.floor(durSec / 3600);
-      const durM = Math.floor((durSec % 3600) / 60);
+  const chunks = await Promise.all(calls);
+  const allFlights = chunks.flat();
+  return allFlights.map((f, i) => cleanFlightToUI(f, i));
+}
 
-      const searchDate = formatLinkDate(flight.depart_date);
-      const returnDate = flight.return_date ? formatLinkDate(flight.return_date) : '';
+// Converte una CleanFlight Kiwi in una UIFlight
+function cleanFlightToUI(f: CleanFlight, idx: number): UIFlight {
+  const outDate = f.outbound.departLocal.split('T')[0];
+  const retDateStr = f.return ? f.return.departLocal.split('T')[0] : null;
+  const cityFrom = f.outbound.cityFrom || f.outbound.from;
+  const cityTo = f.outbound.cityTo || f.outbound.to;
+  return {
+    id: `kiwi-${idx}-${f.outbound.from}${f.outbound.to}-${Date.now()}-${Math.random()}`,
+    route: `${cityFrom} (${f.outbound.from}) → ${cityTo} (${f.outbound.to})`,
+    airline: f.outbound.layovers.length === 0 ? 'Volo diretto' : 'Volo con scalo',
+    price: Math.round(f.price),
+    depart_date: outDate,
+    return_date: retDateStr,
+    isRoundTrip: Boolean(f.return),
+    duration_out_str: minutesToStr(f.outbound.durationMinutes),
+    duration_back_str: f.return ? minutesToStr(f.return.durationMinutes) : '',
+    stops_out: f.outbound.layovers.length,
+    stops_back: f.return ? f.return.layovers.length : 0,
+    deepLink: f.deepLink,
+  };
+}
 
-      // Compone il DeepLink per l'utente, che lo indirizza all'acquisto
-      let deepLink = `https://www.aviasales.it/?marker=${marker}`;
-      if (flight.depart_date) {
-        deepLink = `https://www.aviasales.it/search/${flight.origin}${searchDate}${flight.destination}${returnDate}1?marker=${marker}`;
-      }
+async function kiwiSearch(params: SearchParams): Promise<UIFlight[]> {
+  const origin = await getIataCode(params.origin);
+  const isAnywhere = !params.destination || params.destination.toLowerCase() === 'anywhere';
 
-      const oName = iataNames.get(flight.origin) || flight.origin;
-      const dName = iataNames.get(flight.destination) || flight.destination;
-      
-      const depDateObj = new Date(flight.depart_date);
-      depDateObj.setUTCHours(12, 0, 0, 0);
+  // Se "anywhere" → fan-out su destinazioni popolari
+  if (isAnywhere) {
+    return kiwiSearchAnywhere(origin, params);
+  }
 
-      const arrDateObj = new Date(flight.return_date || flight.depart_date);
-      arrDateObj.setUTCHours(12, 0, 0, 0);
+  const destination = await getIataCode(params.destination);
+  const { depDate, depFlex, retDate, retFlex } = computeKiwiDates(params);
 
-      return {
-        id: `flight-${index}-${Math.random()}`,
-        route: `${oName} (${flight.origin}) → ${dName} (${flight.destination})`,
-        airline: flight.gate || 'Volo Trovato',
-        flightNumber: '',
-        price: flight.value,
-        local_departure: depDateObj.toISOString(),
-        local_arrival: arrDateObj.toISOString(),
-        duration_str: flight.duration ? `${durH}h ${durM}m` : 'N/D',
-        deepLink,
-        stops: flight.number_of_changes || 0,
-      };
-    });
-    
-    return finalFlightsList;
+  const flights: CleanFlight[] = await searchKiwiFlights({
+    flyFrom: origin,
+    flyTo: destination,
+    departureDate: isoToDdmmyyyy(depDate),
+    departureDateFlexRange: depFlex || undefined,
+    returnDate: retDate ? isoToDdmmyyyy(retDate) : undefined,
+    returnDateFlexRange: retFlex || undefined,
+    limit: 1000,
+    maxResults: 1000,
+    passengers: { adults: 1 },
+    // Lasciamo Kiwi filtrare server-side per voli diretti (più efficace che client-side)
+    directFlightsOnly: params.directOnly || undefined,
+  });
+
+  return flights.map((f, i) => cleanFlightToUI(f, i));
 }
 
 // ==============================================================================
-// 5. ENDPOINT ESPOSTO: GESTORE REQUEST GET API/FLIGHTS (IMPLEMENTAZIONE GEMINI)
-// Qui avviene la magia: la UI chiama questo blocco, e passiamo tutto all'intelligenza artificiale 
+// AVIASALES SEARCH — fallback + motore per ricerche broad ("ovunque", country)
+// ==============================================================================
+async function aviasalesSearch(params: SearchParams): Promise<UIFlight[]> {
+  const token = process.env.AVIASALES_API_TOKEN;
+  const marker = process.env.AVIASALES_MARKER;
+  if (!token) throw new Error('API token Aviasales non configurato');
+
+  const origin = await getIataCode(params.origin);
+  const destRaw = params.destination;
+  const destination = destRaw && destRaw.toLowerCase() !== 'anywhere' ? await getIataCode(destRaw) : null;
+
+  let arrayVoli: AviasalesFlight[] = [];
+
+  const fetchLatest = async (
+    orig: string,
+    dest: string | null,
+    oneWay: boolean,
+  ): Promise<AviasalesFlight[]> => {
+    const u = new URL('https://api.travelpayouts.com/v2/prices/latest');
+    u.searchParams.append('currency', 'eur');
+    u.searchParams.append('origin', orig);
+    if (dest) u.searchParams.append('destination', dest);
+    u.searchParams.append('limit', '1000');
+    u.searchParams.append('one_way', oneWay ? 'true' : 'false');
+    const r = await fetch(u.toString(), {
+      headers: { 'x-access-token': token },
+      next: { revalidate: PRICES_TTL },
+    });
+    if (!r.ok) throw new Error(`Aviasales status ${r.status}`);
+    const j = await r.json();
+    if (!j.success || !Array.isArray(j.data)) return [];
+    return j.data as AviasalesFlight[];
+  };
+
+  const inRange = (date: string | undefined, start: string | null, end: string | null): boolean => {
+    if (!date || !start || !end) return true;
+    const ts = new Date(date).getTime();
+    return ts >= new Date(start).getTime() && ts <= new Date(end + 'T23:59:59').getTime();
+  };
+
+  // city-directions usa campi diversi da /v2/prices/latest.
+  // Normalizziamo nella stessa shape AviasalesFlight.
+  interface CityDirectionRaw {
+    origin?: string;
+    destination?: string;
+    price?: number;
+    value?: number;
+    transfers?: number;
+    number_of_changes?: number;
+    departure_at?: string;
+    return_at?: string;
+    depart_date?: string;
+    return_date?: string;
+    airline?: string;
+    gate?: string;
+    duration?: number;
+  }
+  const normalizeCityDirection = (raw: CityDirectionRaw): AviasalesFlight => ({
+    origin: raw.origin || '',
+    destination: raw.destination || '',
+    depart_date: raw.depart_date || (raw.departure_at ? raw.departure_at.split('T')[0] : ''),
+    return_date: raw.return_date || (raw.return_at ? raw.return_at.split('T')[0] : undefined),
+    value: raw.value ?? raw.price ?? 0,
+    duration: raw.duration,
+    gate: raw.gate || raw.airline || '',
+    number_of_changes: raw.number_of_changes ?? raw.transfers ?? 0,
+  });
+
+  const fetchCityDirections = async (): Promise<AviasalesFlight[]> => {
+    const u = new URL('https://api.travelpayouts.com/v1/city-directions');
+    u.searchParams.append('origin', origin);
+    u.searchParams.append('currency', 'eur');
+    const r = await fetch(u.toString(), {
+      headers: { 'x-access-token': token },
+      next: { revalidate: PRICES_TTL },
+    });
+    if (!r.ok) return [];
+    const j = await r.json();
+    if (!j.success || !j.data || typeof j.data !== 'object') return [];
+    return Object.values(j.data as Record<string, CityDirectionRaw>).map(normalizeCityDirection);
+  };
+
+  if (params.isRoundTrip && destination) {
+    // Destinazione specifica + A/R: 2 chiamate one-way e accoppiamento per prezzo minimo
+    const [outbound, inbound] = await Promise.all([
+      fetchLatest(origin, destination, true),
+      fetchLatest(destination, origin, true),
+    ]);
+
+    let outFiltered = outbound;
+    if (params.isSpecificDate && params.exactDepartDate) {
+      outFiltered = outFiltered.filter((f) => f.depart_date === params.exactDepartDate);
+    } else if (!params.isSpecificDate) {
+      outFiltered = outFiltered.filter((f) => inRange(f.depart_date, params.flexDepartStart, params.flexDepartEnd));
+    }
+
+    let inFiltered = inbound;
+    if (params.isSpecificDate && params.exactReturnDate) {
+      inFiltered = inFiltered.filter((f) => f.depart_date === params.exactReturnDate);
+    } else if (!params.isSpecificDate) {
+      inFiltered = inFiltered.filter((f) => inRange(f.depart_date, params.flexReturnStart, params.flexReturnEnd));
+    }
+
+    for (const out of outFiltered) {
+      let cheapest: AviasalesFlight | null = null;
+      const outTs = new Date(out.depart_date).getTime();
+      for (const ret of inFiltered) {
+        if (new Date(ret.depart_date).getTime() < outTs) continue;
+        if (!cheapest || ret.value < cheapest.value) cheapest = ret;
+      }
+      if (cheapest) {
+        arrayVoli.push({
+          origin: out.origin,
+          destination: out.destination,
+          depart_date: out.depart_date,
+          return_date: cheapest.depart_date,
+          value: out.value + cheapest.value,
+          duration: (out.duration || 0) + (cheapest.duration || 0),
+          gate: out.gate === cheapest.gate ? out.gate : `${out.gate} / ${cheapest.gate}`,
+          number_of_changes: Math.max(out.number_of_changes || 0, cheapest.number_of_changes || 0),
+        });
+      }
+    }
+  } else if (params.isRoundTrip && !destination) {
+    // Anywhere + A/R: strategia multi-endpoint per massima copertura
+    // 1) /v2/prices/latest one_way=false → roundtrip puri (spesso scarsi)
+    // 2) /v2/prices/latest one_way=true → destinazioni one-way
+    // 3) /v1/city-directions → destinazioni popolari dall'origine (ispirazione, molto ampio)
+    const [rtResults, owResults, cityDirs] = await Promise.all([
+      fetchLatest(origin, null, false).catch(() => [] as AviasalesFlight[]),
+      fetchLatest(origin, null, true).catch(() => [] as AviasalesFlight[]),
+      fetchCityDirections().catch(() => [] as AviasalesFlight[]),
+    ]);
+
+    const rtOnly = rtResults.filter((f) => f.return_date);
+    // Preferisce roundtrip "veri"; se pochi o assenti, integra con one-way + city-directions
+    let candidates: AviasalesFlight[] = rtOnly.length >= 5
+      ? rtOnly
+      : [...rtOnly, ...owResults, ...cityDirs];
+
+    // Dedupe per combo origin/destination/depart_date (evita doppioni tra rt e ow)
+    const seen = new Set<string>();
+    candidates = candidates.filter((f) => {
+      const key = `${f.origin}|${f.destination}|${f.depart_date}|${f.return_date ?? ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Filtro partenza: applica solo se ci restano risultati, altrimenti mantieni tutto
+    const applySoftFilter = (arr: AviasalesFlight[], fn: (f: AviasalesFlight) => boolean): AviasalesFlight[] => {
+      const strict = arr.filter(fn);
+      return strict.length > 0 ? strict : arr;
+    };
+
+    if (params.isSpecificDate && params.exactDepartDate) {
+      candidates = applySoftFilter(candidates, (f) => f.depart_date === params.exactDepartDate);
+    } else if (!params.isSpecificDate && params.flexDepartStart && params.flexDepartEnd) {
+      candidates = applySoftFilter(candidates, (f) =>
+        inRange(f.depart_date, params.flexDepartStart, params.flexDepartEnd),
+      );
+    }
+
+    // Filtro ritorno: applica solo alle entry che hanno return_date, morbido
+    if (params.isSpecificDate && params.exactReturnDate) {
+      candidates = applySoftFilter(candidates, (f) => !f.return_date || f.return_date === params.exactReturnDate);
+    } else if (!params.isSpecificDate && params.flexReturnStart && params.flexReturnEnd) {
+      candidates = applySoftFilter(candidates, (f) =>
+        !f.return_date || inRange(f.return_date, params.flexReturnStart, params.flexReturnEnd),
+      );
+    }
+
+    arrayVoli = candidates;
+  } else if (!params.isRoundTrip && !destination) {
+    // Anywhere + solo andata: integriamo latest + city-directions
+    const [latest, cityDirs] = await Promise.all([
+      fetchLatest(origin, null, true).catch(() => [] as AviasalesFlight[]),
+      fetchCityDirections().catch(() => [] as AviasalesFlight[]),
+    ]);
+
+    let candidates: AviasalesFlight[] = [...latest, ...cityDirs];
+
+    // Dedup
+    const seen = new Set<string>();
+    candidates = candidates.filter((f) => {
+      const key = `${f.origin}|${f.destination}|${f.depart_date}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Soft date filter
+    const applySoft = (arr: AviasalesFlight[], fn: (f: AviasalesFlight) => boolean) => {
+      const strict = arr.filter(fn);
+      return strict.length > 0 ? strict : arr;
+    };
+    if (params.isSpecificDate && params.exactDepartDate) {
+      candidates = applySoft(candidates, (f) => f.depart_date === params.exactDepartDate);
+    } else if (!params.isSpecificDate && params.flexDepartStart && params.flexDepartEnd) {
+      candidates = applySoft(candidates, (f) => inRange(f.depart_date, params.flexDepartStart, params.flexDepartEnd));
+    }
+    arrayVoli = candidates;
+  } else {
+    // Destinazione specifica + solo andata
+    let voli = await fetchLatest(origin, destination, true);
+    if (params.isSpecificDate && params.exactDepartDate) {
+      arrayVoli = voli.filter((f) => f.depart_date === params.exactDepartDate);
+    } else if (!params.isSpecificDate) {
+      arrayVoli = voli.filter((f) => inRange(f.depart_date, params.flexDepartStart, params.flexDepartEnd));
+    } else {
+      arrayVoli = voli;
+    }
+  }
+
+  const formatLinkDate = (d: string) => {
+    if (!d) return '';
+    const parts = d.split('-');
+    return parts.length === 3 ? `${parts[2]}${parts[1]}` : '';
+  };
+
+  const uniqueIatas = new Set<string>();
+  uniqueIatas.add(origin);
+  for (const v of arrayVoli) {
+    uniqueIatas.add(v.origin);
+    uniqueIatas.add(v.destination);
+  }
+  const iataNames = new Map<string, string>();
+  await Promise.all(Array.from(uniqueIatas).map(async (iata) => iataNames.set(iata, await getPlaceName(iata))));
+
+  return arrayVoli.map((flight, index) => {
+    const durH = Math.floor((flight.duration || 0) / 60);
+    const durM = (flight.duration || 0) % 60;
+    const searchDate = formatLinkDate(flight.depart_date);
+    const returnDate = flight.return_date ? formatLinkDate(flight.return_date) : '';
+
+    let deepLink = `https://www.aviasales.it/?marker=${marker}`;
+    if (flight.depart_date) {
+      deepLink = `https://www.aviasales.it/search/${flight.origin}${searchDate}${flight.destination}${returnDate}1?marker=${marker}`;
+    }
+
+    const oName = iataNames.get(flight.origin) || flight.origin;
+    const dName = iataNames.get(flight.destination) || flight.destination;
+
+    return {
+      id: `avs-${index}-${flight.origin}${flight.destination}-${Math.random()}`,
+      route: `${oName} (${flight.origin}) → ${dName} (${flight.destination})`,
+      airline: flight.gate || 'Volo trovato',
+      price: flight.value,
+      depart_date: flight.depart_date,
+      return_date: flight.return_date || null,
+      isRoundTrip: Boolean(flight.return_date),
+      duration_out_str: flight.duration ? `${durH}h ${durM}m` : 'N/D',
+      duration_back_str: '',
+      stops_out: flight.number_of_changes || 0,
+      stops_back: 0,
+      deepLink,
+    };
+  });
+}
+
+// ==============================================================================
+// ENDPOINT GET /api/flights
+// Strategia: Kiwi per rotte precise; Aviasales per ricerche broad e come fallback
 // ==============================================================================
 export async function GET(request: Request) {
   try {
-      const { searchParams } = new URL(request.url);
-      
-      // Estraiamo tutti i parametri standard passati dalla frontend
-      const rawOrigin = searchParams.get('origin');
-      const rawDestination = searchParams.get('destination') || '';
-      
-      if (!process.env.GEMINI_API_KEY) {
-          throw new Error("Chiave GEMINI API KEY mancante. Inseriscila in .env.local");
-      }
-      
-      // Inizializiamo il cervello dell'agente! Google GenAI
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      // Costruiamo dichiarazione del tool. Diciamo a Gemini: "Guarda che sai usare questo strumento!"
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const searchToolDeclaration: any = {
-          functionDeclarations: [{
-              name: 'execute_flight_search',
-              description: 'Ricerca i voli nel mondo utilizzando vari parametri di rotte e date',
-              parameters: {
-                  type: 'OBJECT',
-                  properties: {
-                      intent_accepted: { type: 'BOOLEAN', description: "Vero se accetti di fare questa ricerca" }
-                  }
-              }
-          }]
-      };
+    const { searchParams } = new URL(request.url);
+    const directOnly = searchParams.get('directOnly') === 'true';
+    const maxPriceParam = searchParams.get('maxPrice');
+    const maxPrice = maxPriceParam ? parseInt(maxPriceParam, 10) : null;
 
+    const rawScope = searchParams.get('anywhereScope');
+    const anywhereScope: AnywhereScope =
+      rawScope === 'italy' || rawScope === 'foreign' ? rawScope : 'all';
 
-      // Spieghiamo a Gemini il task usando linguaggio naturale mischiato ai parametri web
-      const systemPrompt = `Tu sei Gemini, il nuovo assistente integrato nel motore "Tips in Trip".
-Oggi l'utente ti ha richiesto nativamente dal sito di cercare un volo partendo da: ${rawOrigin} verso ${rawDestination}
-(RoundTrip: ${searchParams.get('isRoundTrip')}, Data Specifica: ${searchParams.get('isSpecificDate')}).
-Devi OBBLIGATORIAMENTE chiamare il tuo strumento 'execute_flight_search' a tua disposizione per concludere il comando.`;
+    const params: SearchParams = {
+      origin: searchParams.get('origin') || '',
+      destination: searchParams.get('destination') || '',
+      isRoundTrip: searchParams.get('isRoundTrip') === 'true',
+      isSpecificDate: searchParams.get('isSpecificDate') === 'true',
+      exactDepartDate: searchParams.get('exactDepartDate'),
+      exactReturnDate: searchParams.get('exactReturnDate'),
+      flexDepartStart: searchParams.get('flexDepartStart'),
+      flexDepartEnd: searchParams.get('flexDepartEnd'),
+      flexReturnStart: searchParams.get('flexReturnStart'),
+      flexReturnEnd: searchParams.get('flexReturnEnd'),
+      directOnly,
+      anywhereScope,
+    };
 
-      // Interroghiamo Gemini — tools va dentro config per questa versione SDK
-      // Se Gemini non è configurato o fallisce, la ricerca continua normalmente
+    if (!params.origin) {
+      return NextResponse.json({ error: 'Origine richiesta' }, { status: 400 });
+    }
+
+    // Applica directOnly su un set di risultati
+    const applyDirect = (arr: UIFlight[]): UIFlight[] =>
+      directOnly ? arr.filter((v) => v.stops_out === 0 && v.stops_back === 0) : arr;
+
+    // Accumuliamo TUTTI i raw di entrambi i motori, così in caso di directOnly zero
+    // possiamo rilassare e mostrare comunque qualcosa
+    let rawAll: UIFlight[] = [];
+    let engine: 'kiwi' | 'aviasales' = 'aviasales';
+    let relaxed = false;
+
+    if (isBroadSearch(params)) {
+      engine = 'aviasales';
+      const avsRaw = await aviasalesSearch(params);
+      rawAll = avsRaw;
+      console.log(`[flights] Aviasales (broad): ${avsRaw.length} raw`);
+    } else {
+      // Prova Kiwi prima
+      let kiwiRaw: UIFlight[] = [];
       try {
-        await ai.models.generateContent({
-           model: 'gemini-2.5-flash',
-           contents: systemPrompt,
-           config: { tools: [searchToolDeclaration] }
-        });
-        console.log('Gemini ha orchestrato la ricerca voli.');
-      } catch (geminiErr) {
-        // Non blocchiamo la ricerca se Gemini non risponde
-        console.warn('Gemini non disponibile, proseguo con il motore nativo:', geminiErr);
+        kiwiRaw = await kiwiSearch(params);
+        console.log(`[flights] Kiwi: ${kiwiRaw.length} raw`);
+      } catch (kiwiErr) {
+        console.warn('[flights] Kiwi ha fallito:', kiwiErr);
       }
-      
-      // Costruisco un oggetto per la nostra funzione nativa
-      const finalParams = {
-          origin: searchParams.get('origin'),
-          destination: searchParams.get('destination'),
-          isRoundTrip: searchParams.get('isRoundTrip') === 'true',
-          isSpecificDate: searchParams.get('isSpecificDate') === 'true',
-          exactDepartDate: searchParams.get('exactDepartDate'),
-          exactReturnDate: searchParams.get('exactReturnDate'),
-          flexDepartStart: searchParams.get('flexDepartStart'),
-          flexDepartEnd: searchParams.get('flexDepartEnd'),
-          flexReturnStart: searchParams.get('flexReturnStart'),
-          flexReturnEnd: searchParams.get('flexReturnEnd')
-      };
-      
-      // 6. Gemini restituisce il controllo al motore esatto che ci restituirà i voli!
-      const voliJSON = await internalSearchFlights(finalParams);
-      
-      return NextResponse.json({ data: voliJSON });
-  } catch (err: any) {
-      console.error("Errore generico in route.ts:", err);
-      return NextResponse.json({ error: err.message }, { status: 500 });
+      rawAll = kiwiRaw;
+      engine = 'kiwi';
+
+      // Se Kiwi direct-filtrato è vuoto, proviamo anche Aviasales per integrare
+      if (applyDirect(kiwiRaw).length === 0) {
+        try {
+          const avsRaw = await aviasalesSearch(params);
+          console.log(`[flights] Aviasales (fallback): ${avsRaw.length} raw`);
+          // Unisci i raw da entrambi i motori, evitando duplicati per combo route+data
+          const seen = new Set(kiwiRaw.map((v) => `${v.route}|${v.depart_date}|${v.price}`));
+          for (const v of avsRaw) {
+            const key = `${v.route}|${v.depart_date}|${v.price}`;
+            if (!seen.has(key)) { seen.add(key); rawAll.push(v); }
+          }
+          if (kiwiRaw.length === 0) engine = 'aviasales';
+        } catch (avsErr) {
+          console.error('[flights] Aviasales ha fallito:', avsErr);
+          if (rawAll.length === 0) throw avsErr;
+        }
+      }
+    }
+
+    // Applica directOnly; se azzera tutto, rilassiamo e mostriamo i non-diretti (meglio di niente)
+    let voli = applyDirect(rawAll);
+    if (voli.length === 0 && directOnly && rawAll.length > 0) {
+      relaxed = true;
+      voli = rawAll;
+      console.log(`[flights] directOnly ha azzerato — rilassato, mostro ${voli.length} non-diretti`);
+    }
+
+    if (maxPrice && maxPrice > 0) voli = voli.filter((v) => v.price <= maxPrice);
+
+    voli.sort((a, b) => a.price - b.price);
+
+    console.log(`[flights] engine=${engine} origin=${params.origin} dest=${params.destination} direct=${directOnly} relaxed=${relaxed} → ${voli.length} risultati`);
+    return NextResponse.json({ data: voli, engine, relaxed });
+  } catch (err: unknown) {
+    console.error('Errore in /api/flights:', err);
+    const msg = err instanceof Error ? err.message : 'Errore sconosciuto';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

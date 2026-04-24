@@ -12,17 +12,23 @@ interface PageHeaderProps {
 export default function PageHeader({ title, description, bgImage, children }: PageHeaderProps) {
   const bgStyle = bgImage
     ? {
-        backgroundImage: `linear-gradient(to bottom, rgba(36,0,70,0.45) 0%, rgba(36,0,70,0.85) 75%, #120023 100%), url('${bgImage}')`,
+        backgroundImage: `linear-gradient(to bottom, rgba(36,0,70,0.25) 0%, rgba(36,0,70,0.65) 75%, #120023 100%), url('${bgImage}')`,
       }
     : undefined;
 
   return (
-    <div className={styles.header} style={bgStyle}>
-      <div className={styles.inner}>
-        <h1 className={styles.title}>{title}</h1>
-        {description && <p className={styles.desc}>{description}</p>}
-        {children}
+    <>
+      <div className={styles.header} style={bgStyle}>
+        <div className={styles.inner}>
+          <h1 className={styles.title}>{title}</h1>
+          {children}
+        </div>
       </div>
-    </div>
+      {description && (
+        <div className={styles.subheader}>
+          <p className={styles.desc}>{description}</p>
+        </div>
+      )}
+    </>
   );
 }

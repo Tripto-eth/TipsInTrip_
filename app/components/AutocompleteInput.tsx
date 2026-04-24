@@ -18,7 +18,24 @@ interface AutocompleteInputProps {
   onChange: (val: string) => void;
   required?: boolean;
   initialQuery?: string;
+  /** Mostra "Ovunque" come primo suggerimento (solo per destinazioni) */
+  allowAnywhere?: boolean;
 }
+
+const ANYWHERE_CODE = 'anywhere';
+const ANYWHERE_ITALY_CODE = 'anywhere-italy';
+const ANYWHERE_FOREIGN_CODE = 'anywhere-foreign';
+
+const ANYWHERE_OPTIONS: Array<{
+  code: string;
+  label: string;
+  subtitle: string;
+  emoji: string;
+}> = [
+  { code: ANYWHERE_CODE, label: 'Ovunque', subtitle: 'Scegliamo i migliori risultati per te', emoji: '✨' },
+  { code: ANYWHERE_ITALY_CODE, label: 'Ovunque in Italia', subtitle: 'Solo mete italiane', emoji: '🇮🇹' },
+  { code: ANYWHERE_FOREIGN_CODE, label: 'Ovunque all’estero', subtitle: 'Solo mete estere', emoji: '🌍' },
+];
 
 export default function AutocompleteInput({
   id,
@@ -28,6 +45,7 @@ export default function AutocompleteInput({
   onChange,
   required,
   initialQuery,
+  allowAnywhere,
 }: AutocompleteInputProps) {
   const [query, setQuery] = useState(initialQuery ?? value);
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -98,7 +116,10 @@ export default function AutocompleteInput({
 
   const handleSelect = (place: Place) => {
     let display = place.name;
-    if (place.type === 'country') {
+    const anywhereOpt = ANYWHERE_OPTIONS.find((o) => o.code === place.code);
+    if (anywhereOpt) {
+      display = anywhereOpt.label;
+    } else if (place.type === 'country') {
       display = `${place.name} (Tutti gli aeroporti)`;
     } else if (place.type === 'city') {
       display = `${place.name} (Tutti gli aeroporti)`;
@@ -122,13 +143,36 @@ export default function AutocompleteInput({
           value={query}
           onChange={handleInputChange}
           onFocus={() => {
-            if (suggestions.length > 0) setIsOpen(true);
+            if (suggestions.length > 0 || (allowAnywhere && query.length >= 1)) setIsOpen(true);
           }}
           required={required}
           autoComplete="off"
         />
-        {isOpen && suggestions.length > 0 && (
+        {isOpen && (suggestions.length > 0 || (allowAnywhere && query.length >= 1)) && (
           <div className={styles.dropdownList}>
+            {allowAnywhere && query.length >= 1 && ANYWHERE_OPTIONS.map((opt) => (
+              <div
+                key={opt.code}
+                className={styles.dropdownItem}
+                onClick={() =>
+                  handleSelect({
+                    code: opt.code,
+                    name: opt.label,
+                    country_name: '',
+                    type: 'anywhere',
+                  })
+                }
+                style={{ background: 'linear-gradient(135deg, rgba(157,78,221,0.12), rgba(224,170,255,0.06))' }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className={styles.cityName}>{opt.emoji} {opt.label}</span>
+                  <span className={styles.countryName} style={{ fontSize: '0.75rem', opacity: 0.75 }}>
+                    {opt.subtitle}
+                  </span>
+                </div>
+                <span className={styles.iataCode}>ANY</span>
+              </div>
+            ))}
             {suggestions.map((place) => (
               <div key={place.code} className={styles.dropdownItem} onClick={() => handleSelect(place)}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>

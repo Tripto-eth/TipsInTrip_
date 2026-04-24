@@ -6,35 +6,35 @@ import html from 'remark-html';
 
 const postsDirectory = path.join(process.cwd(), 'posts');
 
-export function getSortedPostsData() {
+export type PostType = 'itinerario' | 'consiglio';
+
+export interface PostMeta {
+  id: string;
+  date: string;
+  title: string;
+  description?: string;
+  coverImage?: string;
+  type?: PostType;
+}
+
+export function getSortedPostsData(): PostMeta[] {
   // Get file names under /posts
   const fileNames = fs.readdirSync(postsDirectory);
-  const allPostsData = fileNames.map((fileName) => {
-    // Remove ".md" from file name to get id
+  const allPostsData: PostMeta[] = fileNames.map((fileName) => {
     const id = fileName.replace(/\.md$/, '');
-
-    // Read markdown file as string
     const fullPath = path.join(postsDirectory, fileName);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
-
-    // Use gray-matter to parse the post metadata section
     const matterResult = matter(fileContents);
-
-    // Combine the data with the id
+    const data = matterResult.data as Omit<PostMeta, 'id'>;
     return {
       id,
-      ...(matterResult.data as { date: string; title: string, description?: string, coverImage?: string }),
+      ...data,
+      // Default: ogni post senza 'type' nel frontmatter è un consiglio
+      type: data.type || 'consiglio',
     };
   });
-  
-  // Sort posts by date
-  return allPostsData.sort((a, b) => {
-    if (a.date < b.date) {
-      return 1;
-    } else {
-      return -1;
-    }
-  });
+
+  return allPostsData.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
 export function getAllPostIds() {
