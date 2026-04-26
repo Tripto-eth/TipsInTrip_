@@ -24,6 +24,59 @@ export default function AdminPage() {
   const [updating, setUpdating] = useState<string | null>(null); // userId in aggiornamento
   const [addAmount, setAddAmount] = useState<Record<string, string>>({}); // input per ogni utente
 
+  // Offerte
+  type OffertaForm = {
+    destination: string; destinationCode: string; flag: string;
+    price: string; originalPrice: string; departDate: string; returnDate: string;
+    airline: string; direct: boolean; affiliateUrl: string;
+    highlight: string; validUntil: string;
+  };
+  const emptyOfferta: OffertaForm = {
+    destination: '', destinationCode: '', flag: '✈️',
+    price: '', originalPrice: '', departDate: '', returnDate: '',
+    airline: 'Ryanair', direct: true, affiliateUrl: '',
+    highlight: '', validUntil: '',
+  };
+  const [offertaForm, setOffertaForm] = useState<OffertaForm>(emptyOfferta);
+  const [offertaStatus, setOffertaStatus] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle');
+  const [offerte, setOfferte] = useState<Array<{ id: string; destination: string; price: number; flag: string }>>([]);
+
+  const fetchOfferte = useCallback(async () => {
+    const res = await fetch('/api/offerte');
+    const data = await res.json();
+    setOfferte(data.data ?? []);
+  }, []);
+
+  useEffect(() => { if (authed) fetchOfferte(); }, [authed, fetchOfferte]);
+
+  const saveOfferta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOffertaStatus('saving');
+    const payload = {
+      ...offertaForm,
+      price: Number(offertaForm.price),
+      originalPrice: offertaForm.originalPrice ? Number(offertaForm.originalPrice) : undefined,
+      direct: offertaForm.direct,
+    };
+    const res = await fetch('/api/admin/offerte', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) { setOffertaStatus('ok'); setOffertaForm(emptyOfferta); fetchOfferte(); }
+    else setOffertaStatus('error');
+    setTimeout(() => setOffertaStatus('idle'), 3000);
+  };
+
+  const deleteOfferta = async (id: string) => {
+    await fetch('/api/admin/offerte', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+      body: JSON.stringify({ id }),
+    });
+    fetchOfferte();
+  };
+
   // Push notifications
   const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
@@ -302,6 +355,63 @@ export default function AdminPage() {
             Nessun utente trovato.
           </p>
         )}
+
+        {/* ── SEZIONE OFFERTE CATANIA ── */}
+        <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem' }}>🔥 Nuova Offerta da Catania</h2>
+          <form onSubmit={saveOfferta} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.9rem' }}>
+              {([
+                ['destination', 'Destinazione', 'Barcellona'],
+                ['destinationCode', 'IATA', 'BCN'],
+                ['flag', 'Emoji bandiera', '🇪🇸'],
+                ['airline', 'Compagnia', 'Ryanair'],
+                ['price', 'Prezzo (€)', '29'],
+                ['originalPrice', 'Prezzo originale (€, opz.)', '59'],
+                ['departDate', 'Data partenza', '15 mag'],
+                ['returnDate', 'Data ritorno (opz.)', '20 mag'],
+                ['affiliateUrl', 'Link affiliato', 'https://...'],
+                ['highlight', 'Badge (es. Offerta lampo)', ''],
+                ['validUntil', 'Scade il (YYYY-MM-DD)', ''],
+              ] as [keyof OffertaForm, string, string][]).map(([field, label, ph]) => (
+                <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)' }}>{label}</label>
+                  <input
+                    value={offertaForm[field] as string}
+                    onChange={(e) => setOffertaForm(p => ({ ...p, [field]: e.target.value }))}
+                    placeholder={ph}
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.55rem 0.75rem', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.9rem' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={offertaForm.direct} onChange={(e) => setOffertaForm(p => ({ ...p, direct: e.target.checked }))}
+                style={{ accentColor: 'var(--primary)' }} />
+              Volo diretto
+            </label>
+            {offertaStatus === 'ok' && <p style={{ color: '#4ade80', fontSize: '0.85rem' }}>✓ Offerta aggiunta!</p>}
+            {offertaStatus === 'error' && <p style={{ color: '#f87171', fontSize: '0.85rem' }}>✗ Errore nel salvataggio</p>}
+            <button type="submit" disabled={offertaStatus === 'saving'} style={{ ...btnStyle, padding: '0.7rem 1.5rem', fontSize: '0.9rem', background: 'rgba(157,78,221,0.4)', opacity: offertaStatus === 'saving' ? 0.7 : 1 }}>
+              {offertaStatus === 'saving' ? 'Salvataggio...' : '➕ Aggiungi offerta'}
+            </button>
+          </form>
+
+          {/* Lista offerte esistenti */}
+          {offerte.length > 0 && (
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.25rem' }}>Offerte attive ({offerte.length})</div>
+              {offerte.map((o) => (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.88rem' }}>{o.flag} {o.destination} — €{o.price}</span>
+                  <button onClick={() => deleteOfferta(o.id)} style={{ background: 'rgba(220,50,50,0.2)', border: '1px solid rgba(220,50,50,0.4)', color: '#fca5a5', fontSize: '0.72rem', padding: '0.25rem 0.6rem', borderRadius: '6px', cursor: 'pointer' }}>
+                    🗑 Elimina
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* ── SEZIONE NOTIFICHE PUSH ── */}
         <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>

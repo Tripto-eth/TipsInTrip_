@@ -6,6 +6,7 @@ import CookieBanner from './components/CookieBanner';
 import FloatingChatButton from './components/FloatingChatButton';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import OneSignalInit from './components/OneSignalInit';
+import OfferTicker from './components/OfferTicker';
 import { LanguageProvider } from './context/LanguageContext';
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
@@ -47,6 +48,7 @@ export default function RootLayout({
           <LanguageProvider>
             <div className="glow"></div>
             <Navbar />
+            <OfferTicker />
             {children}
             <Footer />
             <FloatingChatButton />
