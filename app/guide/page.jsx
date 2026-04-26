@@ -3,6 +3,7 @@ import { getSortedGuidesData } from '../../lib/guides';
 import styles from '../components/BlogPreview.module.css';
 import PageHeader from '../components/PageHeader';
 import PhotoCarousel from '../components/PhotoCarousel';
+import GuideApplyForm from '../components/GuideApplyForm';
 
 const TAG_COLORS = {
   'Tour':        { bg: 'rgba(157,78,221,0.18)', border: 'rgba(157,78,221,0.55)', color: '#c77dff' },
@@ -102,6 +103,7 @@ export default function GuidePage() {
         ))}
       </div>
     </section>
+      <GuideApplyForm />
     </>
   );
 }

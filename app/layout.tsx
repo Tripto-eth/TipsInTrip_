@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     template: '%s | TipsinTrip',
   },
   description: 'Cerca voli economici e flessibili a basso prezzo. Algoritmo eluso, prezzi imbattibili, zero sovrapprezzi.',
+  manifest: '/manifest.json',
   openGraph: {
     title: 'Tips in Trip — Voli economici e flessibili',
     description: 'Cerca voli economici e flessibili a basso prezzo.',

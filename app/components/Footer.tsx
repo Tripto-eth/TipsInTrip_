@@ -69,7 +69,7 @@ export default function Footer() {
             </div>
             {items.map(({ label, href }) => (
               <Link
-                key={href}
+                key={label}
                 href={href}
                 style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', textDecoration: 'none', transition: 'color 0.2s' }}
                 onMouseOver={(e) => (e.currentTarget.style.color = '#fff')}

@@ -11,7 +11,7 @@ export default function NewsletterPopup() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('tit_nl_dismissed')) return;
-    const t = setTimeout(() => setVisible(true), 5000);
+    const t = setTimeout(() => setVisible(true), 15000);
     return () => clearTimeout(t);
   }, []);
 

@@ -165,7 +165,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showForm, setShowForm] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
 
   // Carica i crediti dal server al primo render (solo se autenticato)

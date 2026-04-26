@@ -2,7 +2,7 @@
 title: "Abdul"
 description: "Il tuo Local Expert e scudo protettivo a Sharm el-Sheikh"
 coverImage: "/abdul.jpeg"
-images: ["/abdul.jpeg", "https://images.unsplash.com/photo-1539224855584-601fa6cc8de1?auto=format&fit=crop&q=80&w=800&h=1000", "https://images.unsplash.com/photo-1563248358-15a4c58e5744?auto=format&fit=crop&q=80&w=800&h=1000"]
+images: ["/abdul.jpeg", "/abdul2.jpeg", "/abdul3.jpeg"]
 price: "Sharm el-Sheikh, Egitto"
 lingue: "🇬🇧 🇪🇬"
 tags: ["Guide", "Transfer", "Local Vibes"]
