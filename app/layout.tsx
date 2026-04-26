@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import CookieBanner from './components/CookieBanner';
 import FloatingChatButton from './components/FloatingChatButton';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import OneSignalInit from './components/OneSignalInit';
 import { LanguageProvider } from './context/LanguageContext';
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
@@ -51,6 +52,7 @@ export default function RootLayout({
             <FloatingChatButton />
             <CookieBanner />
             <PWAInstallPrompt />
+            <OneSignalInit />
           </LanguageProvider>
         </body>
       </html>

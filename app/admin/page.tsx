@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UserRow {
   id: string;
@@ -23,6 +23,13 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState<string | null>(null); // userId in aggiornamento
   const [addAmount, setAddAmount] = useState<Record<string, string>>({}); // input per ogni utente
+
+  // Push notifications
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushMessage, setPushMessage] = useState('');
+  const [pushUrl, setPushUrl] = useState('https://tipsintrip.com');
+  const [pushStatus, setPushStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [pushResult, setPushResult] = useState('');
 
   const fetchUsers = useCallback(async (pwd: string) => {
     setLoading(true);
@@ -136,6 +143,31 @@ export default function AdminPage() {
       </main>
     );
   }
+
+  const sendPush = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pushTitle || !pushMessage) return;
+    setPushStatus('sending');
+    try {
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+        body: JSON.stringify({ title: pushTitle, message: pushMessage, url: pushUrl }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPushStatus('ok');
+        setPushResult(`Inviata a ${data.recipients ?? '?'} utenti`);
+        setPushTitle(''); setPushMessage('');
+      } else {
+        setPushStatus('error');
+        setPushResult(JSON.stringify(data.error));
+      }
+    } catch {
+      setPushStatus('error');
+      setPushResult('Errore di rete');
+    }
+  };
 
   // ──────────────────────────────────────────────
   // PANNELLO PRINCIPALE
@@ -270,6 +302,36 @@ export default function AdminPage() {
             Nessun utente trovato.
           </p>
         )}
+
+        {/* ── SEZIONE NOTIFICHE PUSH ── */}
+        <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem' }}>🔔 Invia Notifica Push</h2>
+          <form onSubmit={sendPush} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Titolo</label>
+              <input value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} required
+                placeholder="Es. Offerta lampo: Roma-Londra a €29!" maxLength={64}
+                style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.7rem 1rem', borderRadius: '8px', color: '#fff', outline: 'none' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Messaggio</label>
+              <textarea value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} required rows={3}
+                placeholder="Es. Solo oggi, partenza 15 maggio. Clicca per vedere..."
+                style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.7rem 1rem', borderRadius: '8px', color: '#fff', outline: 'none', resize: 'vertical' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>URL destinazione</label>
+              <input value={pushUrl} onChange={(e) => setPushUrl(e.target.value)}
+                placeholder="https://tipsintrip.com/..."
+                style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.7rem 1rem', borderRadius: '8px', color: '#fff', outline: 'none' }} />
+            </div>
+            {pushStatus === 'ok' && <p style={{ color: '#4ade80', fontSize: '0.9rem' }}>✓ {pushResult}</p>}
+            {pushStatus === 'error' && <p style={{ color: '#f87171', fontSize: '0.9rem' }}>✗ {pushResult}</p>}
+            <button type="submit" disabled={pushStatus === 'sending'} style={{ ...btnStyle, padding: '0.7rem 1.5rem', fontSize: '0.95rem', background: 'rgba(157,78,221,0.4)', opacity: pushStatus === 'sending' ? 0.7 : 1 }}>
+              {pushStatus === 'sending' ? 'Invio...' : '🔔 Invia a tutti gli iscritti'}
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   );

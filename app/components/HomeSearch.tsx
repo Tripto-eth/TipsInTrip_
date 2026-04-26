@@ -9,6 +9,9 @@ import AnimatedLogo from './AnimatedLogo';
 import AutocompleteInput from './AutocompleteInput';
 import { useLang } from '../context/LanguageContext';
 
+const MAX_PRICE_OPTIONS = [25, 50, 75, 100, 150, 200];
+const OPTION_STYLE = { background: '#1a0035', color: '#fff' };
+
 interface Flight {
   id: string;
   route: string;
@@ -471,25 +474,28 @@ export default function HomeSearch() {
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '999px',
                   }}>
-                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{t.search.maxPrice}</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      step="10"
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Prezzo</span>
+                    <select
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
-                      placeholder="es. 300"
                       aria-label="Prezzo massimo in euro"
                       style={{
                         background: 'transparent',
                         border: 'none',
                         outline: 'none',
-                        color: '#fff',
+                        color: maxPrice ? '#fff' : 'rgba(255,255,255,0.5)',
                         fontSize: '0.9rem',
-                        width: '80px',
+                        cursor: 'pointer',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        paddingRight: '0.25rem',
                       }}
-                    />
+                    >
+                      <option value="" style={OPTION_STYLE}>Qualsiasi</option>
+                      {MAX_PRICE_OPTIONS.map((v) => (
+                        <option key={v} value={v} style={OPTION_STYLE}>€{v}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
