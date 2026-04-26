@@ -14,7 +14,7 @@ export default function PWAInstallPrompt() {
     <PwaInstall
       manifest-url="/manifest.json"
       name="TipsinTrip"
-      description="Cerca voli economici e flessibili a basso prezzo."
+      description="Aggiungi TipsinTrip alla schermata Home per ricevere le offerte di volo direttamente sul telefono — anche con l'app chiusa. Gratis, nessuna registrazione."
       icon-url="/baselogo.jpg"
     />
   );
