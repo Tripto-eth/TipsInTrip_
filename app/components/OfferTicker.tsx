@@ -3,24 +3,70 @@
 import { useEffect, useState, useRef } from 'react';
 import type { Offerta } from '../lib/offerte';
 
+interface TickerItem {
+  id: string;
+  flag: string;
+  destination: string;
+  price: number;
+  departDate?: string;
+  returnDate?: string;
+  label: string; // es. "✈️" o "✈️+🏨"
+  days?: number;
+  href: string;
+}
+
 const STORAGE_KEY = 'offer-ticker-closed';
 
+function parseDays(duration: string): number {
+  const n = parseInt(duration);
+  return isNaN(n) ? 5 : n;
+}
+
 export default function OfferTicker() {
-  const [offerte, setOfferte] = useState<Offerta[]>([]);
+  const [items, setItems] = useState<TickerItem[]>([]);
   const [visible, setVisible] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem(STORAGE_KEY)) return;
-    fetch('/api/offerte')
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d.data) && d.data.length > 0) {
-          setOfferte(d.data);
-          setVisible(true);
-        }
-      })
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/offerte').then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('/api/destinazioni').then(r => r.json()).catch(() => ({ data: [] })),
+    ]).then(([offRes, destRes]) => {
+      const offerte: Offerta[] = offRes.data ?? [];
+      const destinazioni: Array<{ id: string; flag: string; destination: string; flightPrice?: number; hotelPerNight?: number; duration: string }> = destRes.data ?? [];
+
+      const tickerItems: TickerItem[] = [
+        ...offerte.map((o) => ({
+          id: o.id,
+          flag: o.flag,
+          destination: o.destination,
+          price: o.price,
+          departDate: o.departDate,
+          returnDate: o.returnDate,
+          label: '✈️',
+          href: '/offerte-catania',
+        })),
+        ...destinazioni.map((d) => {
+          const days = parseDays(d.duration);
+          const total = Math.round(((d.flightPrice ?? 0) * 2) + ((d.hotelPerNight ?? 0) * days));
+          return {
+            id: `dest-${d.id}`,
+            flag: d.flag,
+            destination: d.destination,
+            price: total,
+            label: '✈️+🏨',
+            days,
+            href: `/destinazioni/${d.id}`,
+          };
+        }),
+      ];
+
+      if (tickerItems.length > 0) {
+        setItems(tickerItems);
+        setVisible(true);
+      }
+    });
   }, []);
 
   const close = () => {
@@ -28,10 +74,9 @@ export default function OfferTicker() {
     setVisible(false);
   };
 
-  if (!visible || offerte.length === 0) return null;
+  if (!visible || items.length === 0) return null;
 
-  // Duplica gli item per far sembrare il loop infinito
-  const items = [...offerte, ...offerte, ...offerte];
+  const looped = [...items, ...items, ...items];
 
   return (
     <>
@@ -43,7 +88,7 @@ export default function OfferTicker() {
         .ticker-track {
           display: flex;
           width: max-content;
-          animation: ticker-scroll ${Math.max(20, offerte.length * 8)}s linear infinite;
+          animation: ticker-scroll ${Math.max(20, items.length * 8)}s linear infinite;
         }
         .ticker-track:hover {
           animation-play-state: paused;
@@ -84,33 +129,29 @@ export default function OfferTicker() {
         {/* Striscia scorrevole */}
         <div style={{ flex: 1, overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'center' }}>
           <div className="ticker-track" ref={trackRef}>
-            {items.map((o, i) => (
+            {looped.map((item, i) => (
               <a
-                key={`${o.id}-${i}`}
-                href={o.affiliateUrl}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
+                key={`${item.id}-${i}`}
+                href={item.href}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0 1.25rem',
-                  fontSize: '0.8rem',
-                  color: 'rgba(255,255,255,0.88)',
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                  borderRight: '1px solid rgba(255,255,255,0.08)',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                  padding: '0 1.25rem', fontSize: '0.8rem',
+                  color: 'rgba(255,255,255,0.88)', textDecoration: 'none',
+                  whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.08)',
                   transition: 'color 0.15s',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#e0aaff')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.88)')}
               >
-                <span>{o.flag}</span>
-                <span>CTA → {o.destination}</span>
-                <span style={{ color: '#a78bfa', fontWeight: 700 }}>€{o.price}</span>
-                {o.returnDate
-                  ? <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem' }}>· A/R {o.departDate}–{o.returnDate}</span>
-                  : <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem' }}>· {o.departDate}</span>
+                <span>{item.flag}</span>
+                <span>CTA → {item.destination}</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem' }}>{item.label}</span>
+                <span style={{ color: '#a78bfa', fontWeight: 700 }}>€{item.price}</span>
+                {item.days
+                  ? <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem' }}>· {item.days}gg</span>
+                  : item.departDate
+                    ? <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem' }}>· {item.departDate}{item.returnDate ? `–${item.returnDate}` : ''}</span>
+                    : null
                 }
               </a>
             ))}
