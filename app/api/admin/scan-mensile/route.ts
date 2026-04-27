@@ -112,7 +112,6 @@ export async function GET(req: NextRequest) {
           returnDate: roundtrip ? retDdmm : undefined,
           returnDateFlexRange: roundtrip ? 1 : undefined,
           maxResults: 1,
-          limit: 1,
           passengers: { adults: 1 },
         });
         if (!flights.length) return null;

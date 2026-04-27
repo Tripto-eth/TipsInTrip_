@@ -81,7 +81,6 @@ export async function GET(req: NextRequest) {
           returnDate: retDate,
           returnDateFlexRange: retDate ? 2 : undefined,
           maxResults: 1,
-          limit: 1,
           passengers: { adults: 1 },
         });
         if (!flights.length) return null;

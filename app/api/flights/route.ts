@@ -321,8 +321,7 @@ async function kiwiSearchAnywhere(origin: string, params: SearchParams): Promise
         departureDateFlexRange: depFlex || undefined,
         returnDate: retDate ? isoToDdmmyyyy(retDate) : undefined,
         returnDateFlexRange: retFlex || undefined,
-        limit: 30,
-        maxResults: 5, // top 5 per destinazione = max 70 voli totali
+        maxResults: 5,
         passengers: { adults: 1 },
         directFlightsOnly: params.directOnly || undefined,
       }).catch(() => [] as CleanFlight[]),
@@ -374,10 +373,8 @@ async function kiwiSearch(params: SearchParams): Promise<UIFlight[]> {
     departureDateFlexRange: depFlex || undefined,
     returnDate: retDate ? isoToDdmmyyyy(retDate) : undefined,
     returnDateFlexRange: retFlex || undefined,
-    limit: 1000,
-    maxResults: 1000,
+    maxResults: 200,
     passengers: { adults: 1 },
-    // Lasciamo Kiwi filtrare server-side per voli diretti (più efficace che client-side)
     directFlightsOnly: params.directOnly || undefined,
   });
 
