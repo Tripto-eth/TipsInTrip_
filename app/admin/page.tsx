@@ -471,6 +471,7 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
   const [maxDays, setMaxDays] = useState(7);
   const [weekendOnly, setWeekendOnly] = useState(false);
   const [roundtrip, setRoundtrip] = useState(true);
+  const [directOnly, setDirectOnly] = useState(false);
   const [results, setResults] = useState<MensileResult[]>([]);
   const [scanning, setScanning] = useState(false);
   const [meta, setMeta] = useState<{ totalCalls: number; dates: number } | null>(null);
@@ -479,7 +480,7 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
 
   const scan = async () => {
     setScanning(true); setResults([]); setAdded(new Set()); setMeta(null);
-    const p = new URLSearchParams({ month, maxDays: String(maxDays), weekendOnly: weekendOnly ? '1' : '0', roundtrip: roundtrip ? '1' : '0' });
+    const p = new URLSearchParams({ month, maxDays: String(maxDays), weekendOnly: weekendOnly ? '1' : '0', roundtrip: roundtrip ? '1' : '0', directOnly: directOnly ? '1' : '0' });
     try {
       const res = await fetch(`/api/admin/scan-mensile?${p}`, { headers: { 'x-admin-secret': secret } });
       const d = await res.json();
@@ -545,6 +546,10 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={roundtrip} onChange={e => setRoundtrip(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
             Andata e ritorno
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={directOnly} onChange={e => setDirectOnly(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
+            Solo diretti
           </label>
         </div>
         <button onClick={scan} disabled={scanning} style={{ ...btnStyle, padding: '0.6rem 1.4rem', fontSize: '0.9rem', background: 'rgba(157,78,221,0.4)', alignSelf: 'flex-end' }}>
@@ -622,6 +627,7 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
   const [added, setAdded] = useState<Set<string>>(new Set());
   const [roundtrip, setRoundtrip] = useState(false);
   const [nights, setNights] = useState(5);
+  const [directOnly, setDirectOnly] = useState(false);
 
   const scan = async () => {
     setScanning(true);
@@ -630,6 +636,7 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
     try {
       const params = new URLSearchParams();
       if (roundtrip) { params.set('roundtrip', '1'); params.set('nights', String(nights)); }
+      if (directOnly) params.set('directOnly', '1');
       const res = await fetch(`/api/admin/scan-offerte?${params}`, {
         headers: { 'x-admin-secret': secret },
       });
@@ -695,6 +702,10 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
                 <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)' }}>notti</span>
               </div>
             )}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', cursor: 'pointer', color: 'rgba(255,255,255,0.8)' }}>
+              <input type="checkbox" checked={directOnly} onChange={e => setDirectOnly(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
+              Solo diretti
+            </label>
           </div>
         </div>
         <button onClick={scan} disabled={scanning} style={{ ...btnStyle, padding: '0.6rem 1.4rem', fontSize: '0.9rem', background: 'rgba(157,78,221,0.4)' }}>

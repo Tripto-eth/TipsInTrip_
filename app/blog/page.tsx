@@ -51,7 +51,7 @@ export default function Blog() {
   return (
     <>
       <PageHeader
-        title="Itinerari & Consigli 🌍"
+        title="Itinerari & Consigli"
         description="Guide, itinerari, trucchi low-cost e tutti gli essenziali per viaggiare sereni."
         bgImage="https://giver.it/fileadmin/_processed_/3/e/csm_giver_crociere-antartide-esploratori_header_93c8fea40b.jpg"
       />

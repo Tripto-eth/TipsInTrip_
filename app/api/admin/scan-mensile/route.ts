@@ -89,7 +89,8 @@ export async function GET(req: NextRequest) {
   const yearMonth = searchParams.get('month') ?? new Date().toISOString().slice(0, 7);
   const maxDays = Math.max(1, Math.min(30, parseInt(searchParams.get('maxDays') ?? '7', 10)));
   const weekendOnly = searchParams.get('weekendOnly') === '1';
-  const roundtrip = searchParams.get('roundtrip') !== '0'; // default true
+  const roundtrip = searchParams.get('roundtrip') !== '0';
+  const directOnly = searchParams.get('directOnly') === '1';
 
   const depDates = getTargetDates(yearMonth, weekendOnly);
   if (depDates.length === 0) {
@@ -113,6 +114,7 @@ export async function GET(req: NextRequest) {
           returnDateFlexRange: roundtrip ? 1 : undefined,
           maxResults: 1,
           passengers: { adults: 1 },
+          directFlightsOnly: directOnly || undefined,
         });
         if (!flights.length) return null;
         const f = flights[0];

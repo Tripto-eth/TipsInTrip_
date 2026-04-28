@@ -5,7 +5,7 @@ export const translations = {
     nav: {
       offers: '🔥 Migliori offerte da Catania',
       multiDep: 'Multi-Partenze',
-      guides: '✈️ Guide Tips in Trip',
+      guides: 'Guide Tips in Trip',
       blog: 'Itinerari & Consigli',
       essentials: 'Essenziali',
       login: 'Login',
@@ -90,7 +90,7 @@ export const translations = {
     nav: {
       offers: '🔥 Best deals from Catania',
       multiDep: 'Multi-Departure',
-      guides: '✈️ Travel Guides',
+      guides: 'Travel Guides',
       blog: 'Itineraries & Tips',
       essentials: 'Essentials',
       login: 'Login',

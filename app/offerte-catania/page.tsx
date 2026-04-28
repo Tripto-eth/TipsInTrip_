@@ -22,7 +22,8 @@ export default async function OfferteCataniaPage() {
   let offerte: Awaited<ReturnType<typeof getOfferte>> = [];
   try { offerte = await getOfferte(); } catch {}
 
-  const destinazioni = await getSortedDestinazioniAll();
+  let destinazioni: Awaited<ReturnType<typeof getSortedDestinazioniAll>> = [];
+  try { destinazioni = await getSortedDestinazioniAll(); } catch {}
 
   const hasContent = offerte.length > 0 || destinazioni.length > 0;
 

@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
 
   const roundtrip = req.nextUrl.searchParams.get('roundtrip') === '1';
   const nights = Math.max(1, parseInt(req.nextUrl.searchParams.get('nights') ?? '5', 10));
+  const directOnly = req.nextUrl.searchParams.get('directOnly') === '1';
 
   // Calcola data di ritorno = partenza + nights giorni
   function returnDateDdmm(depDdmm: string, n: number): string {
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest) {
           returnDateFlexRange: retDate ? 2 : undefined,
           maxResults: 1,
           passengers: { adults: 1 },
+          directFlightsOnly: directOnly || undefined,
         });
         if (!flights.length) return null;
         const f = flights[0];

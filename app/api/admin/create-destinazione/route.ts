@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { saveDestinazioneRedis } from '../../../lib/destinazioni';
 
 function checkAuth(req: NextRequest) {
   return req.headers.get('x-admin-secret') === process.env.ADMIN_SECRET;
@@ -9,7 +8,7 @@ function checkAuth(req: NextRequest) {
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '') // rimuove accenti
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 }
@@ -27,7 +26,7 @@ function buildMarkdown(data: {
   days: number;
 }): string {
   const today = new Date().toISOString().split('T')[0];
-  const hotelEstimate = 60; // placeholder
+  const hotelEstimate = 60;
   const budgetMin = Math.round(data.flightPrice * 2 + hotelEstimate * data.days * 0.8);
   const budgetMax = Math.round(data.flightPrice * 2 + hotelEstimate * data.days * 1.3);
 
@@ -125,18 +124,12 @@ export async function POST(req: NextRequest) {
     }
 
     const slug = slugify(destination);
-    const filePath = path.join(process.cwd(), 'destinazioni', `${slug}.md`);
 
-    // Non sovrascrivere se esiste già
-    if (fs.existsSync(filePath)) {
-      return NextResponse.json({ error: `File già esistente: ${slug}.md`, slug }, { status: 409 });
-    }
-
-    // Determina periodo dal mese della data di partenza
     const months = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    void months;
     let period = 'Tutto l\'anno';
     if (departDate) {
-      const parts = departDate.split(' '); // es. "15 mag"
+      const parts = departDate.split(' ');
       const monthAbbr = parts[1]?.toLowerCase();
       const monthMap: Record<string, string> = { gen:'Gennaio',feb:'Febbraio',mar:'Marzo',apr:'Aprile',mag:'Maggio',giu:'Giugno',lug:'Luglio',ago:'Agosto',set:'Settembre',ott:'Ottobre',nov:'Novembre',dic:'Dicembre' };
       if (monthMap[monthAbbr]) period = monthMap[monthAbbr];
@@ -151,9 +144,10 @@ export async function POST(req: NextRequest) {
       days: days ?? 5,
     });
 
-    fs.writeFileSync(filePath, content, 'utf8');
+    // Salva su Redis (funziona su Vercel — il filesystem è read-only)
+    await saveDestinazioneRedis(slug, content);
 
-    return NextResponse.json({ success: true, slug, filePath: `destinazioni/${slug}.md` });
+    return NextResponse.json({ success: true, slug, filePath: `redis:${slug}` });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

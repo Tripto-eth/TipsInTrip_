@@ -53,7 +53,7 @@ export default function BlogClient({ items }: { items: BlogItem[] }) {
       {essentials.length > 0 && (
         <section className={styles.essentialsRow}>
           <div className={styles.essentialsRowHeader}>
-            <span>🧳 Essenziali da viaggio</span>
+            <span>il tuo kit di sopravvivenza</span>
             <Link href="/blog?filter=essenziale" className={styles.essentialsRowSeeAll} onClick={(e) => { e.preventDefault(); setFilter('essenziale'); }}>
               Vedi tutti →
             </Link>
