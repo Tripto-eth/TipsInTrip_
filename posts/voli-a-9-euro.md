@@ -1,6 +1,7 @@
 ---
 title: 'Come Trovare Voli a 9 Euro: La Guida Definitiva'
 date: '2026-04-18'
+type: 'itinerario'
 description: 'Scopri i segreti nascosti degli algoritmi delle compagnie aeree low-cost per volare ovunque con gli spiccioli.'
 coverImage: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1200&auto=format&fit=crop'
 ---

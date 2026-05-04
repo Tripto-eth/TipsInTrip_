@@ -1,6 +1,19 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+
+const PLACEHOLDERS = [
+  'Voli economici per Lisbona a giugno…',
+  'Una settimana al mare sotto i 400€…',
+  'Capitali europee weekend lungo a maggio…',
+  'Cosa fare a Barcellona in 3 giorni…',
+  'Voli low cost dal weekend prossimo…',
+  'Capodanno in Asia entro 800€…',
+  'Mete avventura per chi ama il trekking…',
+  'Dove andare con 50€ da Catania?',
+  'Voli diretti per le isole greche…',
+  'Weekend romantico in Europa…',
+];
 
 interface InputBarProps {
   value: string;
@@ -11,12 +24,19 @@ interface InputBarProps {
 
 export default function InputBar({ value, onChange, onSend, disabled }: InputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [phraseIdx, setPhraseIdx] = useState(0);
 
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }, [value]);
+
+  useEffect(() => {
+    if (value) return;
+    const id = setInterval(() => setPhraseIdx((i) => (i + 1) % PLACEHOLDERS.length), 2800);
+    return () => clearInterval(id);
   }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -43,7 +63,7 @@ export default function InputBar({ value, onChange, onSend, disabled }: InputBar
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Da dove parti? Dove vuoi andare?"
+        placeholder={PLACEHOLDERS[phraseIdx]}
         rows={1}
         disabled={disabled}
         aria-label="Scrivi la tua richiesta di viaggio"

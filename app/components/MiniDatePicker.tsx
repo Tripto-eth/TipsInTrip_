@@ -9,6 +9,8 @@ interface MiniDatePickerProps {
   className?: string;
   label?: string;
   placeholder?: string;
+  flexDays?: number;          // 0=esatta, 1/3/5=±gg
+  onFlexChange?: (days: number) => void;
 }
 
 export default function MiniDatePicker({
@@ -18,6 +20,8 @@ export default function MiniDatePicker({
   className,
   label,
   placeholder = 'Scegli data',
+  flexDays,
+  onFlexChange,
 }: MiniDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => {
@@ -148,6 +152,32 @@ export default function MiniDatePicker({
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
         }}>
+          {onFlexChange && (
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
+              {([0, 1, 3, 5] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => onFlexChange(d)}
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: '999px',
+                    border: `1px solid ${flexDays === d ? 'rgba(224,170,255,0.6)' : 'rgba(255,255,255,0.12)'}`,
+                    background: flexDays === d ? 'rgba(157,78,221,0.4)' : 'rgba(255,255,255,0.05)',
+                    color: flexDays === d ? '#e0aaff' : 'rgba(255,255,255,0.55)',
+                    fontSize: '0.72rem',
+                    fontWeight: flexDays === d ? 700 : 400,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {d === 0 ? 'Esatta' : `±${d}g`}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',

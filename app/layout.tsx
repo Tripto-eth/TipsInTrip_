@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from './components/Navbar';
+import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
 import CookieBanner from './components/CookieBanner';
 import FloatingChatButton from './components/FloatingChatButton';
@@ -58,6 +59,7 @@ export default function RootLayout({
             {children}
             <Footer />
             <FloatingChatButton />
+            <MobileBottomNav />
             <CookieBanner />
             <PWAInstallPrompt />
             <OneSignalInit />

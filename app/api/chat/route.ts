@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { searchKiwiFlights, type KiwiSearchArgs } from '../../lib/kiwi';
-import { LOADING_PHRASES, PHRASES_PER_WAIT, PHRASE_DELAY_MS } from '../../lib/loadingPhrases';
 
 // ============================================================
 // CONFIGURAZIONE CREDITI
@@ -24,16 +23,21 @@ DATE: ${today}. Missing year? Assume future.
 1. 'search_flights' needs a departure date. If missing, guess +1 month but TELL user it's a guess.
 2. If flyTo is missing, use 'anywhere'. Vary destinations on repeats.
 3. Use 'search_flights' for real data.
-4. Output Table: Route | Times | Duration | Price | Book. Times as "dd/mm HH:MM → HH:MM". Add layovers. Price=total. Link=deepLink.
-5. THEMED QUERIES: if user asks for a TYPE of destination (not a specific city), run 3-4 PARALLEL 'search_flights' calls with appropriate IATA codes, then merge results in ONE table sorted by price:
- - "mare" / "spiaggia" / "beach" → PMI (Palma), BCN, ATH, MLA, HER (Creta), IBZ
- - "montagna" / "sci" / "trekking" → INN, GVA, MXP, ZRH, SZG
- - "capitale europea" / "city break" → LON, PAR, AMS, BER, MAD
- - "città d'arte" / "cultura" → PRG, VIE, BUD, FLR, LIS
- - "romantico" / "weekend di coppia" → PAR, VCE, PRG, BCN
- - "festa" / "nightlife" → IBZ, BCN, BER, AMS, MYK
- - "esotico" / "tropicale" → DXB, BKK, CMB, DPS (scali lunghi — avvisa)
- Pick 3-4 based on origin proximity. Always mention in Italian that you compared multiple destinations.
+4. Output flight results EXCLUSIVELY as a fenced code block with language "flights" (NEVER a markdown table). The block must contain a valid JSON array, one object per flight, sorted by price ascending, max 5 results:
+[{"route":"CTA → LGW","airline":"Ryanair","outbound":{"date":"Sab 15/06","dep":"06:45","arr":"10:30","duration":"2h 45m","stops":0},"inbound":{"date":"Sab 22/06","dep":"11:15","arr":"15:00","duration":"2h 45m","stops":0},"price":89,"currency":"€","link":"https://..."}]
+Rules: omit "inbound" for one-way; "stops":0 = diretto, 1+ = numero scali; "duration" = durata totale volo inclusi scali.
+5. THEMED QUERIES: if user asks for a TYPE of destination (not a specific city) from Catania (CTA), run 3-4 PARALLEL 'search_flights' calls using the following IATA codes (ALL explicitly confirmed as DIRECT flights from CTA in summer via airlines like Ryanair, Wizz Air, easyJet, Volotea, DAT, Neos), then merge ALL results into ONE single "flights" block sorted by price:
+ - "mare italia" / "isole minori" → Random pick 3-4 from [CAG, OLB, LMP, PNL, BRI] 
+ - "mare estero" / "spiaggia" → Random pick 3-4 from [MLA, PMI, IBZ, BCN, NCE, TIA]
+ - "isole greche" / "mare grecia" → Random pick 3-4 from [ATH, JMK, JTR, HER, ZTH, RHO]
+ - "montagna" / "sci" / "trekking" → Random pick 3-4 from [BGY, TRN, GVA, BSL, MUC]
+ - "capitale europea" / "city break" → Random pick 3-4 from [STN, BVA, BER, MAD, VIE, BUD, OTP]
+ - "città d'arte" / "cultura" → Random pick 3-4 from [FCO, FLR, VCE, SVQ, PRG, WAW]
+ - "romantico" / "weekend di coppia" → Random pick 3-4 from [BVA, VCE, VRN, BUD, PRG]
+ - "festa" / "nightlife" → Random pick 3-4 from [IBZ, JMK, MLA, BCN, BUD]
+ - "esotico" / "mar rosso" / "medio oriente" → Random pick 3-4 from [AUH, DXB, SSH, TLV]
+
+Pick 3-4 based on the specific prompt context (or mix categories if the prompt is general like "voglio andare al mare"). Always mention in Italian that you compared multiple DIRECT destinations departing from Catania, operated by the respective low-cost or charter airlines.
 </rules>
 
 <advice_requirements>
@@ -232,26 +236,6 @@ export async function POST(request: NextRequest) {
             );
             totalSearches += toolUses.length;
 
-            // Rotatore di frasi "divertenti" che gira in parallelo alla chiamata Kiwi
-            let stopRotating = false;
-            const rotatePhrases = (async () => {
-              const shuffled = [...LOADING_PHRASES].sort(() => Math.random() - 0.5);
-              const count = Math.floor(
-                Math.random() * (PHRASES_PER_WAIT.max - PHRASES_PER_WAIT.min + 1),
-              ) + PHRASES_PER_WAIT.min;
-              const picks = shuffled.slice(0, count);
-
-              try { controller.enqueue(encoder.encode('\n\n')); } catch {}
-              for (let i = 0; i < picks.length; i++) {
-                if (stopRotating || aborted) break;
-                try {
-                  controller.enqueue(encoder.encode(picks[i] + '\n'));
-                } catch {}
-                // Aspetta prima della prossima (ma esce subito se Kiwi ha finito)
-                await new Promise((r) => setTimeout(r, PHRASE_DELAY_MS));
-              }
-            })();
-
             const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
               toolUses.map(async (tu) => {
                 try {
@@ -272,13 +256,6 @@ export async function POST(request: NextRequest) {
                 }
               }),
             );
-
-            // Kiwi ha finito → ferma il rotatore e aspetta che termini il ciclo corrente
-            stopRotating = true;
-            await rotatePhrases;
-
-            // Spazio prima della tabella che Claude genererà
-            try { controller.enqueue(encoder.encode('\n')); } catch {}
 
             if (aborted) return;
 

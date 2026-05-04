@@ -22,7 +22,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={styles.navbar}
+        className={`${styles.navbar} site-navbar`}
         style={{
           background: 'rgba(36, 0, 70, 0.55)',
           backdropFilter: 'blur(14px)',

@@ -1,6 +1,7 @@
 ---
 title: 'Quali carte usare per viaggiare low cost'
 date: '2026-04-18'
+type: 'consiglio'
 description: 'Quali carte usare per viaggiare low cost'
 coverImage: 'https://cdn.turistipercaso.it/media?src=/uploads/2023/09/Carte-di-credito.jpg&sharpen&save-as=webp&aspect-ratio=16:9&crop-to-fit&w=1040&h=585&q=90'
 ---

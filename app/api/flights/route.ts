@@ -58,6 +58,9 @@ interface SearchParams {
   flexReturnEnd: string | null;
   directOnly: boolean;
   anywhereScope: AnywhereScope;
+  nightsToStay: number | null;   // modalità "notti": ritorno = partenza + N notti
+  departFlex: number;            // flex giorni partenza (0-3)
+  returnFlex: number;            // flex giorni ritorno (0-3)
 }
 
 // ==============================================================================
@@ -281,9 +284,18 @@ function computeKiwiDates(params: SearchParams): { depDate: string; depFlex: num
 
   let retDate: string | undefined;
   let retFlex = 0;
-  if (params.isRoundTrip) {
+
+  // Modalità "notti": ritorno = partenza + N notti, flex applicato alla partenza
+  if (params.nightsToStay && params.nightsToStay > 0 && depDate) {
+    const d = new Date(depDate);
+    d.setDate(d.getDate() + params.nightsToStay);
+    retDate = d.toISOString().split('T')[0];
+    depFlex = Math.min(3, Math.max(0, params.departFlex));
+    retFlex = 0;
+  } else if (params.isRoundTrip) {
     if (params.isSpecificDate && params.exactReturnDate) {
       retDate = params.exactReturnDate;
+      if (params.returnFlex > 0) retFlex = Math.min(3, params.returnFlex);
     } else if (params.flexReturnStart && params.flexReturnEnd) {
       retDate = middleDate(params.flexReturnStart, params.flexReturnEnd);
       const span = daysBetween(params.flexReturnStart, params.flexReturnEnd);
@@ -657,6 +669,9 @@ export async function GET(request: Request) {
     const anywhereScope: AnywhereScope =
       rawScope === 'italy' || rawScope === 'foreign' ? rawScope : 'all';
 
+    const nightsRaw = searchParams.get('nightsToStay');
+    const flexRaw = searchParams.get('departFlex');
+
     const params: SearchParams = {
       origin: searchParams.get('origin') || '',
       destination: searchParams.get('destination') || '',
@@ -670,6 +685,9 @@ export async function GET(request: Request) {
       flexReturnEnd: searchParams.get('flexReturnEnd'),
       directOnly,
       anywhereScope,
+      nightsToStay: nightsRaw ? parseInt(nightsRaw, 10) : null,
+      departFlex: flexRaw ? Math.min(3, Math.max(0, parseInt(flexRaw, 10))) : 0,
+      returnFlex: searchParams.get('returnFlex') ? Math.min(3, Math.max(0, parseInt(searchParams.get('returnFlex')!, 10))) : 0,
     };
 
     if (!params.origin) {

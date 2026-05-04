@@ -7,6 +7,8 @@ import MiniRangePicker from './MiniRangePicker';
 import MiniDatePicker from './MiniDatePicker';
 import AnimatedLogo from './AnimatedLogo';
 import AutocompleteInput from './AutocompleteInput';
+import HomeAIBar from './HomeAIBar';
+import GlobeLoader from './GlobeLoader';
 import { useLang } from '../context/LanguageContext';
 
 const MAX_PRICE_OPTIONS = [25, 50, 75, 100, 150, 200];
@@ -144,6 +146,11 @@ export default function HomeSearch() {
 
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [isSpecificDate, setIsSpecificDate] = useState(true);
+  const [flexDays, setFlexDays] = useState(0);    // flex andata 0=esatta, 1/3/5=±gg
+  const [retFlexDays, setRetFlexDays] = useState(0); // flex ritorno
+  const [useNights, setUseNights] = useState(false);
+  const [nightsToStay, setNightsToStay] = useState(7);
+  const [departFlex, setDepartFlex] = useState(0);
 
   // STATI DATE FLESSIBILI (Range Da-A)
   const [flexDepartStart, setFlexDepartStart] = useState('');
@@ -178,6 +185,8 @@ export default function HomeSearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [relaxedDirect, setRelaxedDirect] = useState(false);
+  const [isFormExpanded, setIsFormExpanded] = useState(false);
+  const [mode, setMode] = useState<'classic' | 'ai'>('classic');
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,22 +214,31 @@ export default function HomeSearch() {
       }
       if (destToSend) params.append('destination', destToSend);
 
-      params.append('isRoundTrip', isRoundTrip.toString());
+      params.append('isRoundTrip', (isRoundTrip || useNights).toString());
       params.append('isSpecificDate', isSpecificDate.toString());
       if (directOnly) params.append('directOnly', 'true');
       if (maxPrice && parseInt(maxPrice, 10) > 0) params.append('maxPrice', maxPrice);
 
-      // Applicazione Logica 4 Rami
-      if (isSpecificDate) {
+      if (useNights) {
+        // Modalità notti: data partenza + flex + notti soggiorno
+        if (exactDepartDate) params.append('exactDepartDate', exactDepartDate);
+        params.append('nightsToStay', nightsToStay.toString());
+        params.append('departFlex', departFlex.toString());
+      } else if (isSpecificDate && flexDays > 0) {
+        if (exactDepartDate) params.append('exactDepartDate', exactDepartDate);
+        params.append('departFlex', flexDays.toString());
+        if (isRoundTrip && exactReturnDate) {
+          params.append('exactReturnDate', exactReturnDate);
+          if (retFlexDays > 0) params.append('returnFlex', retFlexDays.toString());
+        }
+      } else if (isSpecificDate) {
         if (exactDepartDate) params.append('exactDepartDate', exactDepartDate);
         if (isRoundTrip && exactReturnDate) {
           params.append('exactReturnDate', exactReturnDate);
         }
       } else {
-        // Range Flessibili (Date Da-A)
         if (flexDepartStart) params.append('flexDepartStart', flexDepartStart);
         if (flexDepartEnd) params.append('flexDepartEnd', flexDepartEnd);
-
         if (isRoundTrip) {
           if (flexReturnStart) params.append('flexReturnStart', flexReturnStart);
           if (flexReturnEnd) params.append('flexReturnEnd', flexReturnEnd);
@@ -257,94 +275,21 @@ export default function HomeSearch() {
     <div className="animate-fade-in" style={{ width: '100%' }}>
 
         <section className={styles.heroSection}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Link href="/" aria-label="Home TipsinTrip" style={{ display: 'inline-flex', alignItems: 'center' }}>
+
+          {/* LOGO centrato grande */}
+          <div className={styles.heroCenterLogo}>
+            <Link href="/" aria-label="Home TipsinTrip">
               <AnimatedLogo size={140} />
             </Link>
-            <div style={{ position: 'relative', display: 'inline-flex' }}>
-              <Link
-                href="/chat"
-                className={styles.navLink}
-                aria-label="Vai alla chat AI"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.4rem 0.85rem',
-                  borderRadius: '999px',
-                  background: 'linear-gradient(135deg, rgba(157,78,221,0.25), rgba(224,170,255,0.18))',
-                  border: '1px solid rgba(224,170,255,0.4)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  whiteSpace: 'nowrap',
-                  fontSize: '0.82rem',
-                }}
-              >
-                <span aria-hidden>✨</span>
-                <span>{t.hero.aiLabel}</span>
-              </Link>
-              <div
-                aria-hidden
-                className="ai-badge-doodle"
-                style={{
-                  position: 'absolute',
-                  left: 'calc(100% + 0.6rem)',
-                  top: 0,
-                  transform: 'translateY(-35%) rotate(6deg)',
-                  alignItems: 'center',
-                  gap: '0.2rem',
-                  fontFamily: "'Caveat', 'Bradley Hand', 'Segoe Script', cursive",
-                  fontSize: '2.1rem',
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  color: 'var(--secondary)',
-                  whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
-                  opacity: 0.95,
-                }}
-              >
-                <svg
-                  width="72"
-                  height="50"
-                  viewBox="0 0 40 28"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M38 14 C 30 4, 16 4, 4 14" />
-                  <path d="M4 14 L 10 9" />
-                  <path d="M4 14 L 10 19" />
-                </svg>
-                <span>{t.hero.aiDoodle}</span>
-              </div>
-            </div>
-            <Link
-              href="/globe"
-              className={styles.navLink}
-              aria-label="Ispirami"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.4rem 0.85rem',
-                borderRadius: '999px',
-                background: 'linear-gradient(135deg, rgba(0,120,80,0.25), rgba(100,220,160,0.15))',
-                border: '1px solid rgba(100,220,160,0.35)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                whiteSpace: 'nowrap',
-                fontSize: '0.82rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              <span aria-hidden>🌍</span>
-              <span>{t.hero.inspireLabel}</span>
-            </Link>
           </div>
-          <h1 className={styles.heroTitle}>
-            {t.hero.title}{" "}
+
+          {/* HERO 2-COL: testo+form a sx, collage a dx */}
+          <div className={styles.heroGrid}>
+
+            {/* ── LEFT: contenuto + ricerca ── */}
+            <div className={styles.heroLeft}>
+          <h1 className={styles.heroHeadline}>
+            {t.hero.title}<br />
             <span 
               className={`${styles.rotatingTextWrapper} ${phraseIndex === phrases.length - 1 ? styles.textPrimary : styles.textWhite}`}
               onMouseEnter={handleHoverText}
@@ -361,32 +306,53 @@ export default function HomeSearch() {
               ))}
             </span>
           </h1>
-          <div className={styles.heroPromises} style={{ fontWeight: 400, lineHeight: 1.5, opacity: 0.9 }}>
-            <div>{t.hero.promise1}</div>
-            <div>{t.hero.promise2}</div>
-            <div style={{ marginTop: '0.75rem', fontSize: '0.95rem' }}>
-              {t.hero.hint}<strong style={{ color: 'var(--primary-hover)' }}>{t.hero.hintExample1}</strong>{t.hero.hintOr}<strong style={{ color: 'var(--primary-hover)' }}>{t.hero.hintExample2}</strong>
+          <p className={styles.heroDesc}>
+            {t.hero.promise1} {t.hero.promise2}
+          </p>
+
+          {/* Pillola switcher modalità */}
+          <div className={styles.modeSwitcher}>
+            <div className={styles.modeSwitcherPill}>
+              <button
+                type="button"
+                className={`${styles.modeSwitcherBtn} ${mode === 'classic' ? styles.modeSwitcherActive : ''}`}
+                onClick={() => setMode('classic')}
+              >
+                Classica
+              </button>
+              <button
+                type="button"
+                className={`${styles.modeSwitcherBtn} ${mode === 'ai' ? styles.modeSwitcherActive : ''}`}
+                onClick={() => setMode('ai')}
+              >
+                ✨ Trip AI
+              </button>
             </div>
           </div>
 
-          <div className={`${styles.searchContainer} delay-100 animate-fade-in`}>
-            <div className={styles.searchClassicBox}>
+          {mode === 'ai' && <HomeAIBar compact noDivider />}
+
+          {mode === 'classic' && <div className={`${styles.searchContainer} delay-100 animate-fade-in`}>
+            <div className={styles.searchClassicBox} onFocus={() => setIsFormExpanded(true)}>
               <form className={styles.searchFormClassic} onSubmit={handleSearch}>
-                
+
                 {/* FILTRI TOP: A/R, Date Flessibili */}
-                <div className={styles.topFiltersContainer} style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
-                  <div className={styles.segmentedControl}>
-                    <div className={styles.slideIndicator} style={{ transform: isRoundTrip ? 'translateX(100%)' : 'translateX(0%)' }} />
-                    <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(false)}>{t.search.oneWay}</button>
-                    <button type="button" className={`${styles.segmentBtn} ${isRoundTrip ? styles.activeText : ''}`} onClick={() => setIsRoundTrip(true)}>{t.search.roundTrip}</button>
+                {isFormExpanded && <div className={styles.topFiltersContainer} style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
+                  {/* Trip type: 3 opzioni */}
+                  <div className={styles.segmentedControl} style={{ '--seg-count': 3 } as React.CSSProperties}>
+                    <div className={styles.slideIndicator} style={{ width: 'calc(100% / 3 - 4px)', transform: useNights ? 'translateX(200%)' : isRoundTrip ? 'translateX(100%)' : 'translateX(0%)' }} />
+                    <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip && !useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(false); setUseNights(false); }}>{t.search.oneWay}</button>
+                    <button type="button" className={`${styles.segmentBtn} ${isRoundTrip && !useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(true); setUseNights(false); }}>{t.search.roundTrip}</button>
+                    <button type="button" className={`${styles.segmentBtn} ${useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(true); setUseNights(true); setIsSpecificDate(true); }}>Notti</button>
                   </div>
 
-                  <div className={styles.segmentedControl}>
+                  {!useNights && <div className={styles.segmentedControl}>
                     <div className={styles.slideIndicator} style={{ transform: isSpecificDate ? 'translateX(0%)' : 'translateX(100%)' }} />
                     <button type="button" className={`${styles.segmentBtn} ${isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(true)}>{t.search.exactDate}</button>
                     <button type="button" className={`${styles.segmentBtn} ${!isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(false)}>{t.search.flexMonth}</button>
-                  </div>
-                </div>
+                  </div>}
+
+                </div>}
 
                 {/* PILLOLA CENTRALE COMPATTA */}
                 <div className={styles.searchCompactBar}>
@@ -412,20 +378,38 @@ export default function HomeSearch() {
                     />
                   </div>
 
-                  {/* Date Start */}
+                  {/* Date partenza */}
+                  {isFormExpanded && (
                   <div className={styles.compactInputItem}>
-                    {isSpecificDate ? (
-                      <MiniDatePicker value={exactDepartDate} onChange={(d) => { setExactDepartDate(d); if (exactReturnDate && d > exactReturnDate) setExactReturnDate(''); }} className={styles.inputField} label="Andata" />
+                    {isSpecificDate || useNights ? (
+                      <MiniDatePicker value={exactDepartDate} onChange={(d) => { setExactDepartDate(d); if (exactReturnDate && d > exactReturnDate) setExactReturnDate(''); }} className={styles.inputField} label="Andata" flexDays={!useNights ? flexDays : undefined} onFlexChange={!useNights ? setFlexDays : undefined} />
                     ) : (
                       <MiniRangePicker startDate={flexDepartStart} endDate={flexDepartEnd} onChangeStart={setFlexDepartStart} onChangeEnd={setFlexDepartEnd} className={styles.inputField} label="Andata" />
                     )}
                   </div>
+                  )}
 
-                  {/* Date End (A/R) */}
-                  {isRoundTrip && (
+                  {/* Flex giorni — solo in modalità notti */}
+                  {isFormExpanded && useNights && (
+                    <div className={styles.compactInputItem} style={{ flex: '0 0 auto' }}>
+                      <select
+                        value={departFlex}
+                        onChange={(e) => setDepartFlex(Number(e.target.value))}
+                        aria-label="Flessibilità partenza"
+                        style={{ background: 'transparent', border: 'none', outline: 'none', color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', cursor: 'pointer', padding: '0.6rem 0.4rem' }}
+                      >
+                        {[0,1,2,3].map(d => (
+                          <option key={d} value={d} style={{ background: '#1a0035' }}>{d === 0 ? 'Data esatta' : `±${d} gg`}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Data ritorno — solo A/R classico */}
+                  {isFormExpanded && isRoundTrip && !useNights && (
                     <div className={styles.compactInputItem}>
                       {isSpecificDate ? (
-                        <MiniDatePicker value={exactReturnDate} onChange={setExactReturnDate} minDate={exactDepartDate || undefined} className={styles.inputField} label="Ritorno" />
+                        <MiniDatePicker value={exactReturnDate} onChange={setExactReturnDate} minDate={exactDepartDate || undefined} className={styles.inputField} label="Ritorno" flexDays={retFlexDays} onFlexChange={setRetFlexDays} />
                       ) : (
                         <MiniRangePicker startDate={flexReturnStart} endDate={flexReturnEnd} onChangeStart={setFlexReturnStart} onChangeEnd={setFlexReturnEnd} className={styles.inputField} label="Ritorno" />
                       )}
@@ -434,14 +418,45 @@ export default function HomeSearch() {
 
                   {/* Tasto Cerca (Integrato su Desktop) */}
                   <div className={`${styles.compactInputItem} ${styles.searchBtnCompactWrapper}`}>
-                    <button type="submit" className={styles.searchBtnCompact} disabled={isLoading}>
-                      {isLoading ? '...' : t.search.searchBtn}
-                    </button>
+                    {isFormExpanded ? (
+                      <button type="submit" className={styles.searchBtnCompact} disabled={isLoading}>
+                        {isLoading ? '...' : t.search.searchBtn}
+                      </button>
+                    ) : (
+                      <button type="button" className={styles.searchBtnCompact} onClick={() => setIsFormExpanded(true)}>
+                        {t.search.searchBtn}
+                      </button>
+                    )}
                   </div>
                 </div>
 
+                {/* NOTTI: slider 1-31 */}
+                {isFormExpanded && useNights && (
+                  <div style={{ width: '100%', padding: '0.25rem 0.25rem 0', marginTop: '0.35rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Durata soggiorno</span>
+                      <span style={{ fontSize: '1rem', fontWeight: 700, color: '#e0aaff' }}>
+                        {nightsToStay} {nightsToStay === 1 ? 'notte' : 'notti'}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={31}
+                      value={nightsToStay}
+                      onChange={(e) => setNightsToStay(Number(e.target.value))}
+                      aria-label="Numero di notti"
+                      style={{ width: '100%', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)' }}>1</span>
+                      <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)' }}>31</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* FILTRI BOTTOM: Solo Diretti, Prezzo Massimo */}
-                <div className={styles.searchRow} style={{ gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
+                {isFormExpanded && <div className={styles.searchRow} style={{ gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
                   <label style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -464,6 +479,7 @@ export default function HomeSearch() {
                     />
                     {t.search.directOnly}
                   </label>
+
 
                   <div style={{
                     display: 'flex',
@@ -497,15 +513,20 @@ export default function HomeSearch() {
                       ))}
                     </select>
                   </div>
-                </div>
+                </div>}
 
               </form>
             </div>
+          </div>}
+
+            </div>
+
+
           </div>
         </section>
 
         <div className="container" style={{ maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
-        {isLoading && <div className={styles.loader}></div>}
+        {isLoading && <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}><GlobeLoader size={120} /></div>}
 
         {!isLoading && error && (
           <div className={`${styles.emptyState} animate-fade-in`}>
