@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import styles from './PageHeader.module.css';
 
 interface PageHeaderProps {
-  title: string;
+  title: string | ReactNode;
   description?: string | ReactNode;
   /** Path to a background image, e.g. '/headers/blog.jpg'. Leave empty to keep the default gradient. */
   bgImage?: string;
@@ -20,7 +20,7 @@ export default function PageHeader({ title, description, bgImage, children }: Pa
     <>
       <div className={styles.header} style={bgStyle}>
         <div className={styles.inner}>
-          <h1 className={styles.title}>{title}</h1>
+          {typeof title === 'string' ? <h1 className={styles.title}>{title}</h1> : title}
           {children}
         </div>
       </div>

@@ -4,6 +4,8 @@ import styles from '../components/BlogPreview.module.css';
 import PageHeader from '../components/PageHeader';
 import PhotoCarousel from '../components/PhotoCarousel';
 import GuideApplyForm from '../components/GuideApplyForm';
+import GuideTicker from '../components/GuideTicker';
+import GuideCyclingTitle from '../components/GuideCyclingTitle';
 
 const TAG_COLORS = {
   'Tour':        { bg: 'rgba(157,78,221,0.18)', border: 'rgba(157,78,221,0.55)', color: '#c77dff' },
@@ -50,9 +52,10 @@ export default function GuidePage() {
     <>
       <PageHeader
         bgImage="https://a.storyblok.com/f/112937/3456x2304/7ee29c6511/pexels-belle-co-99483-1000445.jpg"
-        title="Sblocca la Vera Essenza del Tuo Prossimo Viaggio."
+        title={<GuideCyclingTitle />}
         description="Perché accontentarsi di un'esperienza standard quando puoi avere le chiavi della città? Prenota un nostro Local Expert e crea un itinerario su misura per te. Ti faremo sedere ai tavoli dove mangia la gente del posto, ti guideremo nei mercati al giusto prezzo e ti faremo vivere la cultura locale senza filtri. Scegli il tuo alleato madrelingua ed entra nel cuore della tua destinazione."
       />
+      <GuideTicker />
       <section className={styles.section}>
       <div className={styles.grid}>
         {guides.map(({ id, title, description, coverImage, images, price, lingue, tags }) => (
