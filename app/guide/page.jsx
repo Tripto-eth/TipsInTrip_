@@ -50,8 +50,8 @@ export default function GuidePage() {
     <>
       <PageHeader
         bgImage="https://a.storyblok.com/f/112937/3456x2304/7ee29c6511/pexels-belle-co-99483-1000445.jpg"
-        title="I Nostri Local Expert"
-        description="Prenota, parla con il local e organizza il viaggio attorno a quello che vuoi davvero fare. Le nostre guide sono persone del posto: il tuo scudo madrelingua contro ogni imprevisto, il tuo alleato per contrattare nei mercati ed evitare le fregature da turista, e la tua chiave d'accesso ai luoghi e ai sapori più autentici. Non limitarti a visitare un Paese: vivilo da dentro."
+        title="Sblocca la Vera Essenza del Tuo Prossimo Viaggio."
+        description="Perché accontentarsi di un'esperienza standard quando puoi avere le chiavi della città? Prenota un nostro Local Expert e crea un itinerario su misura per te. Ti faremo sedere ai tavoli dove mangia la gente del posto, ti guideremo nei mercati al giusto prezzo e ti faremo vivere la cultura locale senza filtri. Scegli il tuo alleato madrelingua ed entra nel cuore della tua destinazione."
       />
       <section className={styles.section}>
       <div className={styles.grid}>
