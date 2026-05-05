@@ -3,6 +3,7 @@ import styles from './page.module.css';
 import HomeSearch from './components/HomeSearch';
 import BlogPreview from './components/BlogPreview';
 import NewsletterPopup from './components/NewsletterPopup';
+import NewsletterForm from './components/NewsletterForm';
 import PacchettoCard from './components/PacchettoCard';
 import OffertaCard from './components/OffertaCard';
 import { getSortedDestinazioniAll } from './lib/destinazioni';
@@ -200,12 +201,7 @@ export default async function Home() {
             </p>
           </div>
           <div className={styles.ctaBannerActions}>
-            <Link href="/chat" className={styles.sectionCtaPrimary}>
-              Inizia con l&apos;AI <span aria-hidden>→</span>
-            </Link>
-            <Link href="/destinazioni" className={styles.sectionCtaGhost}>
-              Esplora destinazioni
-            </Link>
+            <NewsletterForm />
           </div>
         </div>
       </section>
