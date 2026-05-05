@@ -50,8 +50,8 @@ export default function GuidePage() {
     <>
       <PageHeader
         bgImage="https://a.storyblok.com/f/112937/3456x2304/7ee29c6511/pexels-belle-co-99483-1000445.jpg"
-        title="I Nostri Local Expert: Esplora il mondo con chi lo chiama Casa"
-        description="Non ci affidiamo a 'turisti di passaggio' o accompagnatori in vacanza. Le nostre guide sono persone del posto, pronte a mostrarti l'anima vera del loro Paese. Avere un Local Expert al tuo fianco cambia le regole del viaggio: è il tuo 'scudo' madrelingua contro ogni imprevisto burocratico o medico, il tuo alleato infallibile per contrattare nei mercati evitando le classiche fregature per turisti, e la tua chiave d'accesso ai luoghi e ai sapori più autentici. Non limitarti a visitare un Paese: vivilo da dentro, in totale sicurezza."
+        title="I Nostri Local Expert"
+        description="Prenota, parla con il local e organizza il viaggio attorno a quello che vuoi davvero fare. Le nostre guide sono persone del posto: il tuo scudo madrelingua contro ogni imprevisto, il tuo alleato per contrattare nei mercati ed evitare le fregature da turista, e la tua chiave d'accesso ai luoghi e ai sapori più autentici. Non limitarti a visitare un Paese: vivilo da dentro."
       />
       <section className={styles.section}>
       <div className={styles.grid}>
