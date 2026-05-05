@@ -227,6 +227,68 @@ button, a, input[type="button"], input[type="submit"] {
   }
 }
 
+/* =========================================
+   PRINT / PDF (Scarica PDF button)
+   ========================================= */
+@media print {
+  /* Nascondi tutto il chrome del sito */
+  .site-navbar, .mobile-bottom-nav, .floating-chat-wrapper,
+  .no-print, footer, header { display: none !important; }
+
+  body {
+    background: #fff !important;
+    color: #1a0a2e !important;
+    padding: 0 !important;
+    font-size: 11pt;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Cover PDF */
+  .print-cover {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 40mm;
+    padding: 10mm 0 6mm;
+    border-bottom: 3px solid #9d4edd;
+    margin-bottom: 8mm;
+    text-align: center;
+    page-break-after: avoid;
+  }
+
+  .print-brand {
+    font-size: 18pt;
+    font-weight: 900;
+    color: #9d4edd !important;
+    letter-spacing: -0.02em;
+  }
+
+  .print-dest {
+    font-size: 24pt;
+    font-weight: 800;
+    color: #1a0a2e !important;
+    margin-top: 3mm;
+  }
+
+  /* Headings itinerario */
+  h3 { color: #7b2cbf !important; border-bottom: 1px solid #e0aaff; padding-bottom: 2mm; margin-top: 7mm; }
+
+  /* Evita page break dentro i giorni */
+  h3 { page-break-after: avoid; }
+  p, li { page-break-inside: avoid; orphans: 3; widows: 3; }
+
+  /* Links — mostra URL */
+  a::after { content: none !important; }
+
+  /* Card Google Maps — non stampare */
+  .maps-section { display: none !important; }
+}
+
 /* Custom Scrollbar for chat and global */
 ::-webkit-scrollbar {
   width: 6px;

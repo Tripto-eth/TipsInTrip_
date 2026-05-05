@@ -30,7 +30,7 @@ export default function GuideCyclingTitle() {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % PHRASES.length), 3000);
+    const t = setInterval(() => setIdx((i) => (i + 1) % PHRASES.length), 4000);
     return () => clearInterval(t);
   }, []);
 

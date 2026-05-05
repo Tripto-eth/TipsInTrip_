@@ -84,6 +84,7 @@ export default function PacchettoCard({ id, flag, destination, coverImage, fligh
               <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#a78bfa' }}>
                 €{totalPrice}
               </span>
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', marginLeft: '0.15rem' }}>*</span>
             </div>
             <span style={{
               background: 'var(--primary)', color: '#fff',

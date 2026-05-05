@@ -29,9 +29,20 @@ export interface DestinazioneM {
   date: string;
 }
 
+export interface MapsDay {
+  day: number;
+  label: string;
+  places: string[];
+}
+
 export interface DestinazioneDetail extends DestinazioneM {
   publicHtml: string;
   itineraryHtml: string;
+  itineraryStyle?: string;
+  styleLabel?: string;
+  styleEmoji?: string;
+  stylePreview?: string;
+  mapsPerDay?: MapsDay[];
 }
 
 export interface DestinazioneRedisItem {
@@ -61,7 +72,18 @@ async function parseDestinazioneDetail(id: string, raw: string): Promise<Destina
   const itineraryMd = lockIdx >= 0 ? content.slice(lockIdx + LOCK_MARKER.length).replace(/^---/, '').trim() : '';
   const toHtml = async (md: string) => (await remark().use(html).process(md)).toString();
   const [publicHtml, itineraryHtml] = await Promise.all([toHtml(publicMd), toHtml(itineraryMd)]);
-  return { id, ...(data as Omit<DestinazioneM, 'id'>), publicHtml, itineraryHtml };
+  let mapsPerDay: MapsDay[] | undefined;
+  if (data.mapsJson) {
+    try { mapsPerDay = JSON.parse(data.mapsJson as string); } catch {}
+  }
+  return {
+    id, ...(data as Omit<DestinazioneM, 'id'>), publicHtml, itineraryHtml,
+    itineraryStyle: data.itineraryStyle as string | undefined,
+    styleLabel: data.styleLabel as string | undefined,
+    styleEmoji: data.styleEmoji as string | undefined,
+    stylePreview: data.stylePreview as string | undefined,
+    mapsPerDay,
+  };
 }
 
 // ── Filesystem (sync) — used for build-time static params ────────

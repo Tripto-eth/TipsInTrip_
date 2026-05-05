@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import PackageGeneratorModal from '../components/PackageGeneratorModal';
 
 interface UserRow {
   id: string;
@@ -39,6 +40,7 @@ export default function AdminPage() {
   };
   const [offertaForm, setOffertaForm] = useState<OffertaForm>(emptyOfferta);
   const [offertaStatus, setOffertaStatus] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle');
+  const [offertaSendPush, setOffertaSendPush] = useState(false);
   const [offerte, setOfferte] = useState<Array<{ id: string; destination: string; price: number; flag: string }>>([]);
 
   const fetchOfferte = useCallback(async () => {
@@ -63,8 +65,22 @@ export default function AdminPage() {
       headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
       body: JSON.stringify(payload),
     });
-    if (res.ok) { setOffertaStatus('ok'); setOffertaForm(emptyOfferta); fetchOfferte(); }
-    else setOffertaStatus('error');
+    if (res.ok) {
+      setOffertaStatus('ok');
+      if (offertaSendPush) {
+        await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({
+            title: `🔥 ${offertaForm.flag} ${offertaForm.destination} a €${offertaForm.price}!`,
+            message: `${offertaForm.airline} · Partenza ${offertaForm.departDate}${offertaForm.returnDate ? ` → ${offertaForm.returnDate}` : ' (solo andata)'}. Prenota subito!`,
+            url: 'https://tipsintrip.com/offerte-catania',
+          }),
+        });
+      }
+      setOffertaForm(emptyOfferta);
+      fetchOfferte();
+    } else setOffertaStatus('error');
     setTimeout(() => setOffertaStatus('idle'), 3000);
   };
 
@@ -394,11 +410,18 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={offertaForm.direct} onChange={(e) => setOffertaForm(p => ({ ...p, direct: e.target.checked }))}
-                style={{ accentColor: 'var(--primary)' }} />
-              Volo diretto
-            </label>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={offertaForm.direct} onChange={(e) => setOffertaForm(p => ({ ...p, direct: e.target.checked }))}
+                  style={{ accentColor: 'var(--primary)' }} />
+                Volo diretto
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={offertaSendPush} onChange={(e) => setOffertaSendPush(e.target.checked)}
+                  style={{ accentColor: '#f59e0b' }} />
+                🔔 Avvisa tutti gli iscritti
+              </label>
+            </div>
             {offertaStatus === 'ok' && <p style={{ color: '#4ade80', fontSize: '0.85rem' }}>✓ Offerta aggiunta!</p>}
             {offertaStatus === 'error' && <p style={{ color: '#f87171', fontSize: '0.85rem' }}>✗ Errore nel salvataggio</p>}
             <button type="submit" disabled={offertaStatus === 'saving'} style={{ ...btnStyle, padding: '0.7rem 1.5rem', fontSize: '0.9rem', background: 'rgba(157,78,221,0.4)', opacity: offertaStatus === 'saving' ? 0.7 : 1 }}>
@@ -477,6 +500,8 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
   const [meta, setMeta] = useState<{ totalCalls: number; dates: number } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [sendPush, setSendPush] = useState(false);
+  const [packageFlight, setPackageFlight] = useState<MensileResult | null>(null);
 
   const scan = async () => {
     setScanning(true); setResults([]); setAdded(new Set()); setMeta(null);
@@ -507,6 +532,17 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
     if (!res.ok && res.status !== 409) {
       alert(`Errore: ${d.error}`);
     } else {
+      if (sendPush) {
+        await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({
+            title: `🔥 ${r.flag} ${r.destination} a €${r.price}!`,
+            message: `Partenza ${r.departDate}${r.returnDate ? ` → ${r.returnDate}` : ' (solo andata)'}${r.direct ? ' · Volo diretto' : ''}. Prenota subito!`,
+            url: 'https://tipsintrip.com/offerte-catania',
+          }),
+        });
+      }
       const msg = res.status === 409
         ? `⚠️ File già esistente: ${d.slug}.md`
         : `✅ Creato: destinazioni/${d.slug}.md — Modifica e poi git push!`;
@@ -551,6 +587,10 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
             <input type="checkbox" checked={directOnly} onChange={e => setDirectOnly(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
             Solo diretti
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', cursor: 'pointer', color: 'rgba(255,200,100,0.9)' }}>
+            <input type="checkbox" checked={sendPush} onChange={e => setSendPush(e.target.checked)} style={{ accentColor: '#f59e0b' }} />
+            🔔 Avvisa al click ➕
+          </label>
         </div>
         <button onClick={scan} disabled={scanning} style={{ ...btnStyle, padding: '0.6rem 1.4rem', fontSize: '0.9rem', background: 'rgba(157,78,221,0.4)', alignSelf: 'flex-end' }}>
           {scanning ? '⏳ Scansione...' : '📅 Avvia'}
@@ -567,6 +607,15 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
         <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>
           {results.length} destinazioni trovate · {meta.totalCalls} chiamate totali su {meta.dates} date
         </p>
+      )}
+
+      {packageFlight && (
+        <PackageGeneratorModal
+          flight={{ destination: packageFlight.destination, destinationCode: packageFlight.destinationCode, flag: packageFlight.flag, price: packageFlight.price, departDate: packageFlight.departDate, returnDate: packageFlight.returnDate }}
+          secret={secret}
+          onClose={() => setPackageFlight(null)}
+          onPublished={() => { const key = packageFlight.destinationCode + packageFlight.departDate; setAdded(prev => new Set([...prev, key])); onAdd(); }}
+        />
       )}
 
       {results.length > 0 && (
@@ -587,10 +636,20 @@ function ScanMensile({ secret, onAdd }: { secret: string; onAdd: () => void }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#a78bfa' }}>€{r.price}</span>
-                  <button onClick={() => add(r)} disabled={adding === r.destinationCode || isAdded}
-                    style={{ padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${isAdded ? 'rgba(74,222,128,0.5)' : 'rgba(157,78,221,0.5)'}`, background: isAdded ? 'rgba(74,222,128,0.15)' : 'rgba(157,78,221,0.25)', color: '#fff', cursor: isAdded ? 'default' : 'pointer' }}>
-                    {isAdded ? '✓' : adding === r.destinationCode ? '...' : '➕'}
-                  </button>
+                  {isAdded ? (
+                    <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: 600 }}>✓</span>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <button onClick={() => add(r)} disabled={adding === r.destinationCode}
+                        style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600, border: '1px solid rgba(157,78,221,0.5)', background: 'rgba(157,78,221,0.25)', color: '#fff', cursor: 'pointer' }}>
+                        {adding === r.destinationCode ? '...' : '✈️'}
+                      </button>
+                      <button onClick={() => setPackageFlight(r)}
+                        style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600, border: '1px solid rgba(245,158,11,0.5)', background: 'rgba(245,158,11,0.2)', color: '#fcd34d', cursor: 'pointer' }}>
+                        📦
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -628,6 +687,8 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
   const [roundtrip, setRoundtrip] = useState(false);
   const [nights, setNights] = useState(5);
   const [directOnly, setDirectOnly] = useState(false);
+  const [sendPush, setSendPush] = useState(false);
+  const [packageFlight, setPackageFlight] = useState<ScanResult | null>(null);
 
   const scan = async () => {
     setScanning(true);
@@ -666,6 +727,17 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
     if (!res.ok && res.status !== 409) {
       alert(`Errore: ${d.error}`);
     } else {
+      if (sendPush) {
+        await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+          body: JSON.stringify({
+            title: `🔥 ${r.flag} ${r.destination} a €${r.price}!`,
+            message: `${r.airline} · Partenza ${r.departDate}${retDate ? ` → ${retDate}` : ' (solo andata)'}. Prenota subito!`,
+            url: 'https://tipsintrip.com/offerte-catania',
+          }),
+        });
+      }
       alert(res.status === 409 ? `⚠️ File già esistente: ${d.slug}.md` : `✅ Creato: destinazioni/${d.slug}.md — Modifica e poi git push!`);
       setAdded((prev) => new Set([...prev, r.destinationCode]));
     }
@@ -706,6 +778,10 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
               <input type="checkbox" checked={directOnly} onChange={e => setDirectOnly(e.target.checked)} style={{ accentColor: 'var(--primary)' }} />
               Solo diretti
             </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', cursor: 'pointer', color: 'rgba(255,200,100,0.9)' }}>
+              <input type="checkbox" checked={sendPush} onChange={e => setSendPush(e.target.checked)} style={{ accentColor: '#f59e0b' }} />
+              🔔 Avvisa al click ➕
+            </label>
           </div>
         </div>
         <button onClick={scan} disabled={scanning} style={{ ...btnStyle, padding: '0.6rem 1.4rem', fontSize: '0.9rem', background: 'rgba(157,78,221,0.4)' }}>
@@ -717,6 +793,15 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', textAlign: 'center', padding: '1.5rem 0' }}>
           Interrogo Kiwi su 28 rotte in parallelo... (~10 secondi)
         </p>
+      )}
+
+      {packageFlight && (
+        <PackageGeneratorModal
+          flight={{ destination: packageFlight.destination, destinationCode: packageFlight.destinationCode, flag: packageFlight.flag, price: packageFlight.price, departDate: packageFlight.departDate, returnDate: (packageFlight as ScanResult & { returnDate?: string }).returnDate, airline: packageFlight.airline }}
+          secret={secret}
+          onClose={() => setPackageFlight(null)}
+          onPublished={() => { setAdded(prev => new Set([...prev, packageFlight.destinationCode])); onAdd(); }}
+        />
       )}
 
       {results.length > 0 && (
@@ -735,18 +820,20 @@ function ScanOfferte({ secret, onAdd }: { secret: string; onAdd: () => void }) {
                 📅 {r.departDate}{(r as ScanResult & { returnDate?: string }).returnDate ? ` → ${(r as ScanResult & { returnDate?: string }).returnDate}` : ''}
                 {' '}· {r.direct ? '✈️ Diretto' : '🔄 Scalo'}
               </div>
-              <button
-                onClick={() => add(r)}
-                disabled={adding === r.destinationCode || added.has(r.destinationCode)}
-                style={{
-                  marginTop: '0.25rem', padding: '0.4rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600,
-                  background: added.has(r.destinationCode) ? 'rgba(74,222,128,0.2)' : 'rgba(157,78,221,0.3)',
-                  border: `1px solid ${added.has(r.destinationCode) ? 'rgba(74,222,128,0.5)' : 'rgba(157,78,221,0.5)'}`,
-                  color: '#fff', cursor: added.has(r.destinationCode) ? 'default' : 'pointer',
-                }}
-              >
-                {added.has(r.destinationCode) ? '✓ Aggiunta' : adding === r.destinationCode ? '...' : '➕ Aggiungi offerta'}
-              </button>
+              {added.has(r.destinationCode) ? (
+                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#4ade80', fontWeight: 600 }}>✓ Aggiunta</div>
+              ) : (
+                <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.4rem' }}>
+                  <button onClick={() => add(r)} disabled={adding === r.destinationCode}
+                    style={{ flex: 1, padding: '0.35rem', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 600, background: 'rgba(157,78,221,0.25)', border: '1px solid rgba(157,78,221,0.5)', color: '#fff', cursor: 'pointer' }}>
+                    {adding === r.destinationCode ? '...' : '✈️ Solo volo'}
+                  </button>
+                  <button onClick={() => setPackageFlight(r)}
+                    style={{ flex: 1, padding: '0.35rem', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 600, background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.5)', color: '#fcd34d', cursor: 'pointer' }}>
+                    📦 Pacchetto
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

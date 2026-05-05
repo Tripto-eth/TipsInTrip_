@@ -82,6 +82,14 @@ export default async function OfferteCataniaPage() {
           </>
         )}
       </div>
+
+      {/* Nota prezzi */}
+      <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '0 1.25rem 2.5rem' }}>
+        <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
+          *I prezzi dei voli e dei pacchetti possono subire variazioni se consultati dopo la data di segnalazione.
+          Le tariffe mostrate si riferiscono al momento della ricerca e potrebbero non essere più disponibili.
+        </p>
+      </div>
     </main>
   );
 }

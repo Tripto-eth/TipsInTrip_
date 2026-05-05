@@ -71,6 +71,11 @@ export default function OffertaCard({ o, onDelete, adminSecret }: {
         📅 {o.departDate}{o.returnDate ? ` → ${o.returnDate}` : ' (solo andata)'}
       </div>
 
+      {/* Data segnalazione */}
+      <div style={{ padding: '0.3rem 1.1rem 0', fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)' }}>
+        *Data segnalazione: {new Date(o.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
+      </div>
+
       {/* Prezzo + CTA */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',

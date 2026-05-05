@@ -74,6 +74,11 @@ export default async function DestinazioneDetailPage({ params }: { params: Promi
           itineraryCost={d.itineraryCost}
           itineraryHtml={d.itineraryHtml}
           destination={d.destination}
+          itineraryStyle={d.itineraryStyle}
+          styleLabel={d.styleLabel}
+          styleEmoji={d.styleEmoji}
+          stylePreview={d.stylePreview}
+          mapsPerDay={d.mapsPerDay}
         />
       )}
     </main>
