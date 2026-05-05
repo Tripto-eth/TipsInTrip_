@@ -1,3 +1,5 @@
+'use client';
+
 import type { Offerta } from '../lib/offerte';
 
 export default function OffertaCard({ o, onDelete, adminSecret }: {
