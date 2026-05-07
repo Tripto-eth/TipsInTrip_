@@ -1,5 +1,20 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { Redis } from '@upstash/redis';
+
+const CACHE_TTL = 900; // 15 minuti
+
+let _redis: Redis | null = null;
+function getRedis(): Redis | null {
+  if (!process.env.UPSTASH_REDIS_REST_URL) return null;
+  if (!_redis) _redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! });
+  return _redis;
+}
+
+function cacheKey(args: KiwiSearchArgs): string {
+  const { maxResults: _, directFlightsOnly: __, ...rest } = args;
+  return `kiwi:v1:${JSON.stringify(rest)}`;
+}
 
 const KIWI_MCP_URL = 'https://mcp.kiwi.com/';
 
@@ -133,6 +148,22 @@ function extractFlights(text: string): RawFlight[] | null {
 export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlight[]> {
   const { maxResults = 5, directFlightsOnly, ...rest } = args;
 
+  // ── Cache check ──────────────────────────────────────────────────
+  const redis = getRedis();
+  const key = cacheKey(args);
+  if (redis) {
+    try {
+      const cached = await redis.get<CleanFlight[]>(key);
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        const filtered = directFlightsOnly
+          ? cached.filter(f => !f.outbound.layovers?.length && (!f.return || !f.return.layovers?.length))
+          : cached;
+        console.log(`[kiwi] cache hit: ${key.slice(0, 60)}`);
+        return filtered.slice(0, maxResults);
+      }
+    } catch { /* cache miss silenzioso */ }
+  }
+
   // Costruisce solo i parametri nello schema ufficiale Kiwi MCP
   const toolArgs: Record<string, unknown> = {
     sort: rest.sort ?? 'price',
@@ -162,10 +193,13 @@ export async function searchKiwiFlights(args: KiwiSearchArgs): Promise<CleanFlig
         const text = (block as { text: string }).text;
         const flights = extractFlights(text);
         if (flights && flights.length > 0) {
+          const allClean = flights.map((raw) => cleanOne(raw, args.passengers));
+          // Salva in cache TUTTI i risultati (pre-filtro directOnly) per massima riutilizzabilità
+          if (redis) redis.set(key, allClean, { ex: CACHE_TTL }).catch(() => {});
           const filtered = directFlightsOnly
-            ? flights.filter((f) => !f.layovers?.length && (!f.return || !(f.return as RawLeg).layovers?.length))
-            : flights;
-          return filtered.slice(0, maxResults).map((raw) => cleanOne(raw, args.passengers));
+            ? allClean.filter((f) => !f.outbound.layovers?.length && (!f.return || !f.return.layovers?.length))
+            : allClean;
+          return filtered.slice(0, maxResults);
         }
       }
     }

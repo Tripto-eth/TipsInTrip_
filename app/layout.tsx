@@ -7,6 +7,7 @@ import CookieBanner from './components/CookieBanner';
 import FloatingChatButton from './components/FloatingChatButton';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import OneSignalInit from './components/OneSignalInit';
+import PwaNotificationPrompt from './components/PwaNotificationPrompt';
 import OfferTicker from './components/OfferTicker';
 import { LanguageProvider } from './context/LanguageContext';
 import { ClerkProvider } from '@clerk/nextjs';
@@ -63,6 +64,7 @@ export default function RootLayout({
             <CookieBanner />
             <PWAInstallPrompt />
             <OneSignalInit />
+            <PwaNotificationPrompt />
           </LanguageProvider>
         </body>
       </html>

@@ -25,13 +25,13 @@ export default function MiniRangePicker({ startDate, endDate, onChangeStart, onC
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: PointerEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
@@ -164,12 +164,14 @@ export default function MiniRangePicker({ startDate, endDate, onChangeStart, onC
 
       {/* Calendar Dropdown */}
       {isOpen && (
-        <div style={{
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
           position: 'absolute',
           top: 'calc(100% + 8px)',
           left: '0',
           right: 'auto',
-          zIndex: 999,
+          zIndex: 9999,
           background: 'rgba(36, 0, 70, 0.85)',
           border: '1px solid rgba(255,255,255,0.15)',
           borderRadius: '12px',

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth, SignInButton } from '@clerk/nextjs';
 import ChatWindow from './ChatWindow';
 import InputBar from './InputBar';
-import GlobeLoader from './GlobeLoader';
+import Spinner from './Spinner';
 import type { ChatMessage } from '../types/chat';
 import styles from './HomeAIBar.module.css';
 
@@ -170,7 +170,7 @@ function ChatModal({ seed, onClose }: { seed: string | null; onClose: () => void
 
         {!isLoaded ? (
           <div className={styles.loadingState}>
-            <GlobeLoader size={80} />
+            <Spinner size={60} />
           </div>
         ) : !isSignedIn ? (
           <AuthGateInline />

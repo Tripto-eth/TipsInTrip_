@@ -60,4 +60,7 @@
     height: 260px;
     padding: 1.25rem;
   }
+  .title {
+    font-size: clamp(1.1rem, 5vw, 2rem);
+  }
 }

@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ChatMessage } from '../types/chat';
 import { LOADING_PHRASES, PHRASE_DELAY_MS } from '../lib/loadingPhrases';
-import GlobeLoader from './GlobeLoader';
+import Spinner from './Spinner';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -217,7 +217,7 @@ export default function ChatWindow({ messages, isLoading }: ChatWindowProps) {
 
       {isLoading && (
         <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
-          <GlobeLoader size={44} />
+          <Spinner size={36} />
           <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)' }}>{LOADING_PHRASES[phraseIdx]}</span>
         </div>
       )}

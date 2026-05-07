@@ -11,7 +11,25 @@ export default function NewsletterPopup() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('tit_nl_dismissed')) return;
-    const t = setTimeout(() => setVisible(true), 15000);
+    
+    let t: ReturnType<typeof setTimeout>;
+    const startTimer = () => {
+      t = setTimeout(() => setVisible(true), 30000); // 30 secondi
+    };
+
+    if (localStorage.getItem('tipsintrip-tour-done')) {
+      // Se l'utente ha già fatto il tutorial in passato, avvia normalmente
+      startTimer();
+    } else {
+      // Altrimenti aspetta che il tutorial finisca prima di contare
+      const handleTourFinished = () => startTimer();
+      window.addEventListener('tutorial-finished', handleTourFinished);
+      return () => {
+        window.removeEventListener('tutorial-finished', handleTourFinished);
+        clearTimeout(t);
+      };
+    }
+
     return () => clearTimeout(t);
   }, []);
 

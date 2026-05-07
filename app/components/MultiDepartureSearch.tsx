@@ -201,7 +201,7 @@ export default function MultiDepartureSearch() {
         <div className={`${styles.searchContainer} delay-100 animate-fade-in`}>
           <div className={styles.searchClassicBox}>
             <form className={styles.searchFormClassic} onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div id="tour-multi-origins" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', textAlign: 'left' }}>
                   Aeroporti di partenza ({origins.length}/6)
                 </div>
@@ -432,7 +432,7 @@ export default function MultiDepartureSearch() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '0.75rem' }}>
+              <div id="tour-multi-priority" style={{ marginTop: '0.75rem' }}>
                 <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.4rem', textAlign: 'left' }}>Ordina per</div>
                 <div className={styles.segmentedControl}>
                   <div className={styles.slideIndicator} style={{ transform: priority === 'sync' ? 'translateX(100%)' : 'translateX(0%)' }} />

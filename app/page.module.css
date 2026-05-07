@@ -521,12 +521,14 @@
   padding: 1.25rem 0 3rem;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 10;
   background-image:
     radial-gradient(circle at 20% 0%, rgba(157, 78, 221, 0.18) 0%, transparent 55%),
     linear-gradient(to bottom, rgba(18, 0, 35, 0.4) 0%, rgba(18, 0, 35, 0.85) 75%, var(--background) 100%),
     url('/header.jpg');
   background-size: cover;
-  background-position: center;
+  background-position: top center;
   background-repeat: no-repeat;
 }
 
@@ -884,8 +886,9 @@
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.searchClassicBox:hover {
-  background: rgba(36, 0, 70, 0.85); /* Diventa più evidente/chiaro */
+.searchClassicBox:hover,
+.searchClassicBoxActive {
+  background: rgba(36, 0, 70, 0.85);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.2);
@@ -1445,7 +1448,7 @@
   margin-bottom: 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .segmentBtn {
     font-size: 0.75rem;
     padding: 0.5rem 0;
@@ -1453,6 +1456,13 @@
 
   .topFiltersContainer {
     gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topFiltersContainer .segmentedControl {
+    width: 100%;
+    flex: none;
   }
 
   .searchContainer {

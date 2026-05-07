@@ -51,11 +51,11 @@ export default function Navbar() {
   <Link href="/offerte-catania" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
     {t.nav.offers}
   </Link>
-  <Link href="/multi-partenze" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+  <Link id="tour-multitratta" href="/multi-partenze" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
     <span style={{ backgroundColor: '#ffb300', color: 'white', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '12px', fontWeight: 'bold', lineHeight: '1' }}>NEW</span>
     {t.nav.multiDep}
   </Link>
-  <Link href="/guide" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+  <Link id="tour-guide-nav" href="/guide" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
     {t.nav.guides}
   </Link>
   <Link href="/blog" className={styles.navLink}>

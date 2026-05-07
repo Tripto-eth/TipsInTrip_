@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { getGuideData, getAllGuideIds } from '../../../lib/guides';
-// Puoi usare lo stesso CSS del blog se vuoi mantenere la grafica identica
-import styles from '../../blog/blog.module.css'; 
+import styles from '../../blog/blog.module.css';
 import PhotoCarousel from '../../components/PhotoCarousel';
 import GuideContactForm from '../../components/GuideContactForm';
+import GuideDetailTourGuide from '../../components/GuideDetailTourGuide';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tipsintrip.com';
 
@@ -71,6 +71,7 @@ export default async function GuideProfile({ params }: { params: Promise<{ slug:
 
   return (
     <div className={styles.container}>
+      <GuideDetailTourGuide />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

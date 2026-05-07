@@ -9,6 +9,7 @@ import AnimatedLogo from './AnimatedLogo';
 import AutocompleteInput from './AutocompleteInput';
 import HomeAIBar from './HomeAIBar';
 import GlobeLoader from './GlobeLoader';
+import TourGuide from './TourGuide';
 import { useLang } from '../context/LanguageContext';
 
 const MAX_PRICE_OPTIONS = [25, 50, 75, 100, 150, 200];
@@ -182,6 +183,7 @@ export default function HomeSearch() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [flights, setFlights] = useState<Flight[]>([]);
+  const [page, setPage] = useState(1);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [relaxedDirect, setRelaxedDirect] = useState(false);
@@ -196,6 +198,7 @@ export default function HomeSearch() {
     setHasSearched(true);
     setError(null);
     setFlights([]);
+    setPage(1);
     setRelaxedDirect(false);
 
     try {
@@ -273,6 +276,11 @@ export default function HomeSearch() {
 
   return (
     <div className="animate-fade-in" style={{ width: '100%' }}>
+      <TourGuide
+        onExpandForm={() => setIsFormExpanded(true)}
+        onActivateNotti={() => { setIsFormExpanded(true); setUseNights(true); setIsRoundTrip(true); setIsSpecificDate(true); }}
+        onDeactivateNotti={() => { setUseNights(false); setIsRoundTrip(false); }}
+      />
 
         <section className={styles.heroSection}>
 
@@ -330,23 +338,27 @@ export default function HomeSearch() {
             </div>
           </div>
 
+          <div style={{ minHeight: 420 }}>
           {mode === 'ai' && <HomeAIBar compact noDivider />}
 
           {mode === 'classic' && <div className={`${styles.searchContainer} delay-100 animate-fade-in`}>
-            <div className={styles.searchClassicBox} onFocus={() => setIsFormExpanded(true)}>
+            <div
+              className={`${styles.searchClassicBox} ${(isFormExpanded || origin || destination || exactDepartDate || exactReturnDate || flexDepartStart) ? styles.searchClassicBoxActive : ''}`}
+              onFocus={() => setIsFormExpanded(true)}
+            >
               <form className={styles.searchFormClassic} onSubmit={handleSearch}>
 
                 {/* FILTRI TOP: A/R, Date Flessibili */}
                 {isFormExpanded && <div className={styles.topFiltersContainer} style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
                   {/* Trip type: 3 opzioni */}
-                  <div className={styles.segmentedControl} style={{ '--seg-count': 3 } as React.CSSProperties}>
+                  <div id="tour-trip-type" className={styles.segmentedControl} style={{ '--seg-count': 3 } as React.CSSProperties}>
                     <div className={styles.slideIndicator} style={{ width: 'calc(100% / 3 - 4px)', transform: useNights ? 'translateX(200%)' : isRoundTrip ? 'translateX(100%)' : 'translateX(0%)' }} />
                     <button type="button" className={`${styles.segmentBtn} ${!isRoundTrip && !useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(false); setUseNights(false); }}>{t.search.oneWay}</button>
                     <button type="button" className={`${styles.segmentBtn} ${isRoundTrip && !useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(true); setUseNights(false); }}>{t.search.roundTrip}</button>
-                    <button type="button" className={`${styles.segmentBtn} ${useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(true); setUseNights(true); setIsSpecificDate(true); }}>Notti</button>
+                    <button id="tour-notti-btn" type="button" className={`${styles.segmentBtn} ${useNights ? styles.activeText : ''}`} onClick={() => { setIsRoundTrip(true); setUseNights(true); setIsSpecificDate(true); }}>Notti</button>
                   </div>
 
-                  {!useNights && <div className={styles.segmentedControl}>
+                  {!useNights && <div id="tour-flessibile" className={styles.segmentedControl}>
                     <div className={styles.slideIndicator} style={{ transform: isSpecificDate ? 'translateX(0%)' : 'translateX(100%)' }} />
                     <button type="button" className={`${styles.segmentBtn} ${isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(true)}>{t.search.exactDate}</button>
                     <button type="button" className={`${styles.segmentBtn} ${!isSpecificDate ? styles.activeText : ''}`} onClick={() => setIsSpecificDate(false)}>{t.search.flexMonth}</button>
@@ -440,6 +452,7 @@ export default function HomeSearch() {
                       </span>
                     </div>
                     <input
+                      id="tour-notti-slider"
                       type="range"
                       min={1}
                       max={31}
@@ -519,10 +532,10 @@ export default function HomeSearch() {
             </div>
           </div>}
 
-            </div>
+          </div> {/* fine minHeight wrapper */}
 
-
-          </div>
+            </div> {/* fine heroLeft */}
+          </div> {/* fine heroGrid */}
         </section>
 
         <div className="container" style={{ maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
@@ -552,21 +565,33 @@ export default function HomeSearch() {
 
         {!isLoading && hasSearched && !error && (
           <section className={`${styles.resultsList} animate-fade-in delay-200`}>
-            {flights.length > 0 ? (
-              <>
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: 'rgba(255,255,255,0.55)',
-                  textAlign: 'center',
-                  padding: '0.5rem 1rem',
-                  marginBottom: '0.5rem',
-                  lineHeight: 1.5,
-                }}>
-                  {t.search.cacheNote}
-                </div>
-                {flights.map(flight => <FlightCardItem key={flight.id} flight={flight} />)}
-              </>
-            ) : (
+            {flights.length > 0 ? (() => {
+              const PER_PAGE = 10;
+              const totalPages = Math.ceil(flights.length / PER_PAGE);
+              const visible = flights.slice(0, page * PER_PAGE);
+              return (
+                <>
+                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '0.75rem' }}>
+                    {visible.length} di {flights.length} voli
+                  </div>
+                  {visible.map((flight, i) => <FlightCardItem key={`${flight.id}-${i}`} flight={flight} />)}
+                  {page < totalPages && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
+                      <button
+                        onClick={() => setPage(p => p + 1)}
+                        style={{
+                          padding: '0.7rem 2rem', borderRadius: '999px',
+                          background: 'rgba(157,78,221,0.2)', border: '1px solid rgba(157,78,221,0.45)',
+                          color: '#c77dff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+                        }}
+                      >
+                        Carica altri voli ({flights.length - visible.length} rimanenti)
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })() : (
               <div className={styles.emptyState}>
                 {t.results.noResults}
               </div>

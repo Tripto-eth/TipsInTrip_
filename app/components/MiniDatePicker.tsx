@@ -35,13 +35,13 @@ export default function MiniDatePicker({
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: PointerEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   // Allinea il calendario al mese del valore quando cambia dall'esterno
@@ -137,12 +137,14 @@ export default function MiniDatePicker({
       </div>
 
       {isOpen && (
-        <div style={{
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
           position: 'absolute',
           top: 'calc(100% + 8px)',
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 999,
+          zIndex: 9999,
           background: 'rgba(36, 0, 70, 0.85)',
           border: '1px solid rgba(255,255,255,0.15)',
           borderRadius: '12px',

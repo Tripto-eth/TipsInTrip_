@@ -16,6 +16,8 @@ interface TickerItem {
 }
 
 const STORAGE_KEY = 'offer-ticker-closed';
+const CACHE_KEY = 'offer-ticker-data';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minuti
 
 function parseDays(duration: string): number {
   const n = parseInt(duration);
@@ -29,44 +31,51 @@ export default function OfferTicker() {
 
   useEffect(() => {
     if (sessionStorage.getItem(STORAGE_KEY)) return;
-    Promise.all([
-      fetch('/api/offerte').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/destinazioni').then(r => r.json()).catch(() => ({ data: [] })),
-    ]).then(([offRes, destRes]) => {
-      const offerte: Offerta[] = offRes.data ?? [];
-      const destinazioni: Array<{ id: string; flag: string; destination: string; flightPrice?: number; hotelPerNight?: number; duration: string }> = destRes.data ?? [];
 
-      const tickerItems: TickerItem[] = [
-        ...offerte.map((o) => ({
-          id: o.id,
-          flag: o.flag,
-          destination: o.destination,
-          price: o.price,
-          departDate: o.departDate,
-          returnDate: o.returnDate,
-          label: '✈️',
-          href: '/offerte-catania',
-        })),
-        ...destinazioni.map((d) => {
-          const days = parseDays(d.duration);
-          const total = Math.round(((d.flightPrice ?? 0) * 2) + ((d.hotelPerNight ?? 0) * days));
-          return {
-            id: `dest-${d.id}`,
-            flag: d.flag,
-            destination: d.destination,
-            price: total,
-            label: '✈️+🏨',
-            days,
-            href: `/destinazioni/${d.id}`,
-          };
-        }),
-      ];
+    // Usa cache sessionStorage per evitare fetch ripetuti
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { items: cachedItems, ts } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL && cachedItems.length > 0) {
+          setItems(cachedItems);
+          setVisible(true);
+          return;
+        }
+      } catch {}
+    }
 
-      if (tickerItems.length > 0) {
-        setItems(tickerItems);
-        setVisible(true);
-      }
-    });
+    // Defer dopo che la pagina è interattiva (non blocca il primo paint)
+    const timer = setTimeout(() => {
+      Promise.all([
+        fetch('/api/offerte').then(r => r.json()).catch(() => ({ data: [] })),
+        fetch('/api/destinazioni').then(r => r.json()).catch(() => ({ data: [] })),
+      ]).then(([offRes, destRes]) => {
+        const offerte: Offerta[] = offRes.data ?? [];
+        const destinazioni: Array<{ id: string; flag: string; destination: string; flightPrice?: number; hotelPerNight?: number; duration: string }> = destRes.data ?? [];
+
+        const tickerItems: TickerItem[] = [
+          ...offerte.map((o) => ({
+            id: o.id, flag: o.flag, destination: o.destination,
+            price: o.price, departDate: o.departDate, returnDate: o.returnDate,
+            label: '✈️', href: '/offerte-catania',
+          })),
+          ...destinazioni.map((d) => {
+            const days = parseDays(d.duration);
+            const total = Math.round(((d.flightPrice ?? 0) * 2) + ((d.hotelPerNight ?? 0) * days));
+            return { id: `dest-${d.id}`, flag: d.flag, destination: d.destination, price: total, label: '✈️+🏨', days, href: `/destinazioni/${d.id}` };
+          }),
+        ];
+
+        if (tickerItems.length > 0) {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ items: tickerItems, ts: Date.now() }));
+          setItems(tickerItems);
+          setVisible(true);
+        }
+      });
+    }, 800); // aspetta 800ms dopo il mount
+
+    return () => clearTimeout(timer);
   }, []);
 
   const close = () => {

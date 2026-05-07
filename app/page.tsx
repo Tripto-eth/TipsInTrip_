@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import styles from './page.module.css';
 import HomeSearch from './components/HomeSearch';
 import BlogPreview from './components/BlogPreview';
@@ -17,23 +18,13 @@ function parseDays(duration: string): number {
   return isNaN(n) ? 5 : n;
 }
 
-export default async function Home() {
-  const [destinazioni, offerte] = await Promise.all([
-    getSortedDestinazioniAll().catch(() => []),
-    getOfferte().catch(() => []),
-  ]);
-  let guides: ReturnType<typeof getSortedGuidesData> = [];
-  try { guides = getSortedGuidesData(); } catch { guides = []; }
-
+async function PacchettiSection() {
+  const destinazioni = await getSortedDestinazioniAll().catch(() => []);
   const topDest = destinazioni.slice(0, 6);
-  const topOff = offerte.slice(0, 4);
+
+  if (topDest.length === 0) return null;
 
   return (
-    <main className={styles.main}>
-      <HomeSearch />
-
-      {/* ─── Pacchetti Volo + Hotel ──────────────────────────────── */}
-      {topDest.length > 0 && (
         <section className={styles.landingSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionLabel}>— Pacchetti pronti</span>
@@ -69,10 +60,16 @@ export default async function Home() {
             </Link>
           </div>
         </section>
-      )}
+  );
+}
 
-      {/* ─── Offerte Lampo ───────────────────────────────────────── */}
-      {topOff.length > 0 && (
+async function OfferteSection() {
+  const offerte = await getOfferte().catch(() => []);
+  const topOff = offerte.slice(0, 4);
+
+  if (topOff.length === 0) return null;
+
+  return (
         <section className={`${styles.landingSection} ${styles.altBg}`}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionLabel}>— Voli del momento</span>
@@ -96,7 +93,26 @@ export default async function Home() {
             </Link>
           </div>
         </section>
-      )}
+  );
+}
+
+export default async function Home() {
+  let guides: ReturnType<typeof getSortedGuidesData> = [];
+  try { guides = getSortedGuidesData(); } catch { guides = []; }
+
+  return (
+    <main className={styles.main}>
+      <HomeSearch />
+
+      {/* ─── Pacchetti Volo + Hotel ──────────────────────────────── */}
+      <Suspense fallback={<div style={{ padding: '6rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem' }}>Caricamento pacchetti in corso...</div>}>
+        <PacchettiSection />
+      </Suspense>
+
+      {/* ─── Offerte Lampo ───────────────────────────────────────── */}
+      <Suspense fallback={<div style={{ padding: '6rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem' }}>Ricerca offerte lampo...</div>}>
+        <OfferteSection />
+      </Suspense>
 
       {/* ─── Strumenti smart ─────────────────────────────────────── */}
       <section className={styles.landingSection}>

@@ -8,6 +8,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  id?: string;
 }
 
 function HomeIcon() {
@@ -54,11 +55,11 @@ function BlogIcon() {
 
 const ITEMS_LEFT: NavItem[] = [
   { href: '/', label: 'Home', icon: <HomeIcon /> },
-  { href: '/multi-partenze', label: 'Multi', icon: <MultiIcon /> },
+  { href: '/multi-partenze', label: 'Multi', icon: <MultiIcon />, id: 'tour-multitratta' },
 ];
 
 const ITEMS_RIGHT: NavItem[] = [
-  { href: '/guide', label: 'Guide', icon: <GuideIcon /> },
+  { href: '/guide', label: 'Guide', icon: <GuideIcon />, id: 'tour-guide-nav' },
   { href: '/blog', label: 'Blog', icon: <BlogIcon /> },
 ];
 
@@ -72,6 +73,7 @@ export default function MobileBottomNav() {
     return (
       <Link
         key={item.href}
+        id={item.id}
         href={item.href}
         aria-label={item.label}
         style={{
