@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useAuth, useUser, SignInButton, SignOutButton } from '@clerk/nextjs';
+import { useLang } from '../context/LanguageContext';
 import AnimatedLogo from './AnimatedLogo';
 
 interface NavItem {
@@ -50,8 +51,10 @@ function MultiIcon() {
 function GuideIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 21c0-3.5 3.1-6 7-6s7 2.5 7 6" />
+      <circle cx="9" cy="7" r="3" />
+      <path d="M3 21c0-3 2.7-5 6-5s6 2 6 5" />
+      <circle cx="17" cy="8" r="2.5" />
+      <path d="M17 13c2.2 0.2 4 1.8 4 4" />
     </svg>
   );
 }
@@ -68,19 +71,21 @@ function BlogIcon() {
 }
 
 const ITEMS_LEFT: NavItem[] = [
-  { href: '/giochi', label: 'Giochi', icon: <GameIcon /> },
   { href: '/', label: 'Home', icon: <HomeIcon /> },
   { href: '/multi-partenze', label: 'Multi', icon: <MultiIcon />, id: 'tour-multitratta' },
+  { href: '/guide', label: 'Guide', icon: <GuideIcon />, id: 'tour-guide-nav' },
 ];
 
 const ITEMS_RIGHT: NavItem[] = [
-  { href: '/guide', label: 'Guide', icon: <GuideIcon />, id: 'tour-guide-nav' },
+  { href: '/giochi', label: 'Giochi', icon: <GameIcon /> },
   { href: '/blog', label: 'Blog', icon: <BlogIcon /> },
 ];
 
 function AccountDrawer({ onClose }: { onClose: () => void }) {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
+  const { t } = useLang();
+  const ta = t.account;
   const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
@@ -97,7 +102,7 @@ function AccountDrawer({ onClose }: { onClose: () => void }) {
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1998, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} />
       <div style={{
         position: 'fixed', left: 0, right: 0,
-        bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))',
+        bottom: 'calc(68px + env(safe-area-inset-bottom, 0px) + 2px)',
         zIndex: 1999,
         background: 'linear-gradient(180deg, rgba(28,0,55,0.98) 0%, rgba(18,0,35,0.99) 100%)',
         border: '1px solid rgba(224,170,255,0.18)', borderBottom: 'none',
@@ -108,8 +113,14 @@ function AccountDrawer({ onClose }: { onClose: () => void }) {
       }}>
         <style>{`@keyframes slideUpDrawer { from { opacity:0; transform:translateY(100%); } to { opacity:1; transform:translateY(0); } }`}</style>
 
-        {/* Handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.18)', margin: '0 auto 1.25rem' }} />
+        {/* Handle — cliccabile per chiudere */}
+        <button
+          onClick={onClose}
+          aria-label="Chiudi"
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', padding: '0 0 1.25rem', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.3)' }} />
+        </button>
 
         {isSignedIn ? (
           <>
@@ -142,40 +153,25 @@ function AccountDrawer({ onClose }: { onClose: () => void }) {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.1rem' }}>⚡</span>
-                <span style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.8)' }}>Crediti Trip AI</span>
+                <span style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.8)' }}>{ta.credits}</span>
               </div>
               <span style={{ fontWeight: 800, fontSize: '1rem', color: '#c77dff' }}>
                 {credits === null ? '...' : credits}
               </span>
             </div>
 
-            {/* Azioni */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-              <Link href="/chat" onClick={onClose} style={{
-                display: 'flex', alignItems: 'center', gap: '0.65rem',
-                padding: '0.75rem 1rem', borderRadius: 12,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#fff', textDecoration: 'none', fontSize: '0.88rem',
-              }}>
-                <span>🛒</span> Acquista crediti
+              <Link href="/chat" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', textDecoration: 'none', fontSize: '0.88rem' }}>
+                {ta.buyCredits}
               </Link>
-              <Link href="/chat" onClick={onClose} style={{
-                display: 'flex', alignItems: 'center', gap: '0.65rem',
-                padding: '0.75rem 1rem', borderRadius: 12,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#fff', textDecoration: 'none', fontSize: '0.88rem',
-              }}>
-                <span>✈️</span> Trip AI Chat
+              <Link href="/chat" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', textDecoration: 'none', fontSize: '0.88rem' }}>
+                {ta.aiChat}
               </Link>
             </div>
 
             <SignOutButton>
-              <button onClick={onClose} style={{
-                width: '100%', padding: '0.75rem', borderRadius: 12,
-                background: 'rgba(220,50,50,0.12)', border: '1px solid rgba(220,50,50,0.3)',
-                color: '#ff8080', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit',
-              }}>
-                🚪 Esci
+              <button onClick={onClose} style={{ width: '100%', padding: '0.75rem', borderRadius: 12, background: 'rgba(220,50,50,0.12)', border: '1px solid rgba(220,50,50,0.3)', color: '#ff8080', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {ta.logout}
               </button>
             </SignOutButton>
           </>
@@ -183,20 +179,12 @@ function AccountDrawer({ onClose }: { onClose: () => void }) {
           <>
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👤</div>
-              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#fff', marginBottom: '0.3rem' }}>Accedi a TipsinTrip</div>
-              <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
-                Registrati gratis e ricevi 20 crediti per la Trip AI
-              </div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#fff', marginBottom: '0.3rem' }}>{ta.loginTitle}</div>
+              <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{ta.loginDesc}</div>
             </div>
             <SignInButton mode="modal">
-              <button onClick={onClose} style={{
-                width: '100%', padding: '0.85rem', borderRadius: 12,
-                background: 'linear-gradient(135deg, #9d4edd, #7b2cbf)',
-                border: 'none', color: '#fff', fontWeight: 700, fontSize: '0.95rem',
-                cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 4px 15px rgba(157,78,221,0.4)',
-              }}>
-                🔑 Accedi / Registrati
+              <button onClick={onClose} style={{ width: '100%', padding: '0.85rem', borderRadius: 12, background: 'linear-gradient(135deg, #9d4edd, #7b2cbf)', border: 'none', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(157,78,221,0.4)' }}>
+                {ta.loginBtn}
               </button>
             </SignInButton>
           </>
@@ -208,6 +196,7 @@ function AccountDrawer({ onClose }: { onClose: () => void }) {
 
 function AccountButton() {
   const { isSignedIn } = useAuth();
+  const { t } = useLang();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -234,7 +223,7 @@ function AccountButton() {
             <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
           </svg>
         )}
-        <span>{isSignedIn ? 'Account' : 'Login'}</span>
+        <span>{isSignedIn ? t.account.account : t.account.login}</span>
       </button>
       {drawerOpen && <AccountDrawer onClose={() => setDrawerOpen(false)} />}
     </>
@@ -289,9 +278,9 @@ export default function MobileBottomNav() {
         bottom: 0,
         zIndex: 1000,
         display: 'none', // mostrato solo via media query
-        alignItems: 'flex-end',
-        height: '68px',
-        paddingBottom: 'env(safe-area-inset-bottom, 0)',
+        alignItems: 'flex-start',
+        height: 'calc(68px + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: 'rgba(20, 0, 40, 0.85)',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',

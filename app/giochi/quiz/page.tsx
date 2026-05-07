@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth, SignInButton } from '@clerk/nextjs';
+import { useLang } from '../../context/LanguageContext';
 import {
   type Difficulty, type QuizQuestion,
   DIFFICULTY_CONFIG, getLeaderboard, saveScore, type ScoreEntry,
@@ -36,6 +37,8 @@ function DiffBadge({ diff }: { diff: string }) {
 }
 
 function GlobalLeaderboard() {
+  const { t } = useLang();
+  const tg = t.games;
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,8 +50,8 @@ function GlobalLeaderboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', padding: '1rem 0' }}>Caricamento classifica…</div>;
-  if (!entries.length) return <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', padding: '1rem 0' }}>Nessun punteggio ancora. Sii il primo!</div>;
+  if (loading) return <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', padding: '1rem 0' }}>{tg.loading}</div>;
+  if (!entries.length) return <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', padding: '1rem 0' }}>{tg.noScores}</div>;
 
   return (
     <div>
@@ -68,6 +71,8 @@ function GlobalLeaderboard() {
 
 export default function QuizPage() {
   const { isSignedIn } = useAuth();
+  const { t } = useLang();
+  const tg = t.games;
   const [phase, setPhase] = useState<Phase>('menu');
   const [diff, setDiff] = useState<Difficulty>('easy');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -183,20 +188,21 @@ export default function QuizPage() {
     return (
       <main style={pageStyle}>
         <Link href="/giochi" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', textDecoration: 'none', marginBottom: '1.5rem' }}>
-          ← Giochi
+          {tg.back}
         </Link>
 
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🌍</div>
           <h1 style={{ fontSize: 'clamp(1.6rem,5vw,2.2rem)', fontWeight: 900, margin: '0 0 0.5rem', background: `linear-gradient(135deg,#fff,${PURPLE_LIGHT})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-            Quiz Viaggi
+            {tg.quizTitle}
           </h1>
-          <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>10 domande · rispondi in tempo · scala la classifica</p>
+          <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>{tg.quizSubtitle}</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2.5rem' }}>
           {(['easy', 'medium', 'hard'] as Difficulty[]).map(d => {
             const c = DIFFICULTY_CONFIG[d];
+            const label = d === 'easy' ? tg.easy : d === 'medium' ? tg.medium : tg.hard;
             return (
               <button key={d} onClick={() => startGame(d)} style={{
                 padding: '1rem 1.25rem', borderRadius: 16,
@@ -208,8 +214,8 @@ export default function QuizPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
                   <span style={{ fontSize: '1.4rem' }}>{c.emoji}</span>
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>{c.label}</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{c.points} pt/domanda · {c.time}s per risposta</div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>{label}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{c.points} {tg.ptPerQ} · {c.time}{tg.secPerQ}</div>
                   </div>
                 </div>
                 <span style={{ opacity: 0.5, fontSize: '1.1rem' }}>→</span>
@@ -218,10 +224,9 @@ export default function QuizPage() {
           })}
         </div>
 
-        {/* Classifica globale */}
         <div>
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-            🏆 Classifica Globale
+            {tg.leaderboardTitle}
           </div>
           <GlobalLeaderboard />
         </div>
@@ -237,50 +242,44 @@ export default function QuizPage() {
       <main style={pageStyle}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '4rem', marginBottom: '0.75rem' }}>{medal}</div>
-          <h2 style={{ fontSize: 'clamp(1.4rem,5vw,2rem)', fontWeight: 900, margin: '0 0 0.3rem' }}>{score} punti</h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', margin: '0 0 0.75rem' }}>{correct} su {questions.length} corrette — {pct}%</p>
+          <h2 style={{ fontSize: 'clamp(1.4rem,5vw,2rem)', fontWeight: 900, margin: '0 0 0.3rem' }}>{score} {tg.pointsSuffix}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.5)', margin: '0 0 0.75rem' }}>{correct} {tg.correctOf} {questions.length} {tg.correctSuffix} — {pct}%</p>
           <DiffBadge diff={diff} />
-
-          {/* Stato salvataggio */}
           <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
-            {saving && '⏳ Salvataggio in classifica…'}
-            {saved && '✅ Punteggio salvato in classifica!'}
+            {saving && tg.saving}
+            {saved && tg.saved}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem' }}>
           <button onClick={() => startGame(diff)} style={{ flex: 1, padding: '0.85rem', borderRadius: 14, background: `linear-gradient(135deg,${PURPLE},#7b2cbf)`, border: 'none', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-            🔄 Rigioca
+            {tg.replay}
           </button>
           <button onClick={() => setPhase('menu')} style={{ flex: 1, padding: '0.85rem', borderRadius: 14, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-            🎯 Difficoltà
+            {tg.changeDiff}
           </button>
         </div>
 
-        {/* Login CTA se non autenticato */}
         {!isSignedIn && (
           <div style={{ padding: '1rem 1.25rem', borderRadius: 16, background: 'rgba(157,78,221,0.1)', border: '1px solid rgba(157,78,221,0.3)', marginBottom: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Entra in classifica 🏆</div>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)', margin: '0 0 0.25rem', lineHeight: 1.6 }}>
-              Crea un account gratuito per salvare il punteggio.
-            </p>
+            <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>{tg.loginTitle}</div>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)', margin: '0 0 0.25rem', lineHeight: 1.6 }}>{tg.loginText}</p>
             <p style={{ fontSize: '0.82rem', margin: '0 0 0.85rem', lineHeight: 1.7 }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}>Scala la classifica · Guadagna punti · Vinci premi, sconti, itinerari e… </span>
-              <span style={{ color: '#c77dff', fontWeight: 800, fontSize: '0.95rem' }}>VIAGGIA! ✈️</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>{tg.loginTagline} </span>
+              <span style={{ color: '#c77dff', fontWeight: 800, fontSize: '0.95rem' }}>{tg.loginCTA}</span>
             </p>
             <SignInButton mode="modal">
               <button style={{ padding: '0.7rem 1.8rem', borderRadius: 999, background: `linear-gradient(135deg,${PURPLE},#7b2cbf)`, border: 'none', color: '#fff', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(157,78,221,0.35)' }}>
-                🔑 Accedi / Registrati
+                {tg.signIn}
               </button>
             </SignInButton>
           </div>
         )}
 
-        {/* Classifica locale */}
         {localBoard.length > 0 && (
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-              📱 I tuoi punteggi
+              {tg.myScores}
             </div>
             {localBoard.slice(0, 5).map((e, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.75rem', borderRadius: 10, marginBottom: '0.3rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -294,10 +293,9 @@ export default function QuizPage() {
           </div>
         )}
 
-        {/* Classifica globale */}
         <div>
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-            🌍 Classifica Globale
+            {tg.globalLb}
           </div>
           <GlobalLeaderboard />
         </div>
@@ -364,8 +362,8 @@ export default function QuizPage() {
           color: selected === q.a ? '#4ade80' : '#f87171',
         }}>
           {selected === q.a
-            ? `✅ Corretto! +${cfg.points + Math.round((timeLeft / cfg.time) * 10)} punti`
-            : `❌ Era: ${q.opts[q.a]}`}
+            ? `${tg.correct} +${cfg.points + Math.round((timeLeft / cfg.time) * 10)} ${tg.pointsSuffix}`
+            : `${tg.wrong} ${q.opts[q.a]}`}
         </div>
       )}
     </main>

@@ -4,12 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import NewsletterPopup from './NewsletterPopup';
 
-const PILL_DISMISSED_KEY = 'tit_lang_pill_dismissed';
-const GIFT_DELAY_MS = 9000;
+const PILL_KEY = 'tit_lang_pill_dismissed';
+const GIFT_KEY = 'tit_nl_gift_dismissed';
+const GIFT_DELAY_MS = 45000; // 45 secondi — appare sopra il pallino in modo indipendente
 const BOTTOM = 'calc(68px + env(safe-area-inset-bottom, 0px) + 14px)';
+const BOTTOM_GIFT = 'calc(68px + env(safe-area-inset-bottom, 0px) + 68px)'; // sopra il pallino
 
 // ─── Scroll-to-top ──────────────────────────────────────────────────────────
 function ScrollTopButton() {
+  const { t } = useLang();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -23,7 +26,7 @@ function ScrollTopButton() {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      aria-label="Torna in cima"
+      aria-label={t.floating.scrollTop}
       style={{
         position: 'fixed', right: 14, bottom: BOTTOM, zIndex: 990,
         width: 44, height: 44, borderRadius: '50%',
@@ -34,7 +37,6 @@ function ScrollTopButton() {
         cursor: 'pointer', backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         boxShadow: '0 4px 18px rgba(0,0,0,0.4)',
-        transition: 'transform 0.18s, box-shadow 0.18s',
       }}
     >
       ↑
@@ -42,43 +44,42 @@ function ScrollTopButton() {
   );
 }
 
-// ─── Language pill + gift ────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────────────
 export default function MobileFloatingActions() {
-  const { lang, setLang } = useLang();
-  const [dismissed, setDismissed] = useState(true); // start hidden, check in effect
+  const { lang, setLang, t } = useLang();
+  const tf = t.floating;
+
+  // Pallino lingua — rimane finché non viene swipato o cliccato "Rimuovi"
+  const [pillDismissed, setPillDismissed] = useState(true);
   const [langOpen, setLangOpen] = useState(false);
-  const [phase, setPhase] = useState<'pill' | 'gift' | 'gone'>('pill');
-  const [nlOpen, setNlOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const touchStartX = useRef(0);
-  const giftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const interacted = useRef(false);
 
+  // Regalo newsletter — appare indipendentemente dopo un delay
+  const [giftVisible, setGiftVisible] = useState(false);
+  const [nlOpen, setNlOpen] = useState(false);
+
+  // Init: legge localStorage per il pallino, sessionStorage per il regalo
   useEffect(() => {
-    const saved = typeof window !== 'undefined' && localStorage.getItem(PILL_DISMISSED_KEY);
-    if (!saved) setDismissed(false);
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem(PILL_KEY)) setPillDismissed(false);
+    if (!sessionStorage.getItem(GIFT_KEY)) {
+      const t = setTimeout(() => setGiftVisible(true), GIFT_DELAY_MS);
+      return () => clearTimeout(t);
+    }
   }, []);
 
-  // Avvia timer per trasformare pill in regalo
-  useEffect(() => {
-    if (dismissed || phase !== 'pill') return;
-    giftTimerRef.current = setTimeout(() => {
-      if (!interacted.current) setPhase('gift');
-    }, GIFT_DELAY_MS);
-    return () => { if (giftTimerRef.current) clearTimeout(giftTimerRef.current); };
-  }, [dismissed, phase]);
-
-  const dismiss = () => {
-    localStorage.setItem(PILL_DISMISSED_KEY, '1');
-    setDismissed(true);
+  const dismissPill = () => {
+    localStorage.setItem(PILL_KEY, '1');
+    setPillDismissed(true);
     setLangOpen(false);
   };
 
-  const handleLangClick = () => {
-    interacted.current = true;
-    if (giftTimerRef.current) clearTimeout(giftTimerRef.current);
-    setLangOpen(v => !v);
+  const dismissGift = () => {
+    sessionStorage.setItem(GIFT_KEY, '1');
+    setGiftVisible(false);
+    setNlOpen(false);
   };
 
   const selectLang = (l: 'it' | 'en') => {
@@ -86,7 +87,6 @@ export default function MobileFloatingActions() {
     setLangOpen(false);
   };
 
-  // Touch swipe left to dismiss
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     setIsDragging(true);
@@ -97,14 +97,9 @@ export default function MobileFloatingActions() {
   };
   const onTouchEnd = () => {
     setIsDragging(false);
-    if (translateX < -60) {
-      dismiss();
-    } else {
-      setTranslateX(0);
-    }
+    if (translateX < -60) dismissPill();
+    else setTranslateX(0);
   };
-
-  if (dismissed) return <ScrollTopButton />;
 
   const pillStyle: React.CSSProperties = {
     position: 'fixed', left: 14, bottom: BOTTOM, zIndex: 990,
@@ -117,26 +112,26 @@ export default function MobileFloatingActions() {
     <>
       <ScrollTopButton />
 
-      {/* Language pill */}
-      {phase === 'pill' && (
+      {/* ── Pallino lingua — sempre visibile finché non dismissato ── */}
+      {!pillDismissed && (
         <div style={pillStyle} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
           <button
-            onClick={handleLangClick}
-            aria-label="Lingua"
+            onClick={() => setLangOpen(v => !v)}
+            aria-label={tf.langLabel}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: '8px 12px', borderRadius: 999,
-              background: 'rgba(22,0,46,0.88)',
-              border: '1px solid rgba(224,170,255,0.28)',
+              background: 'rgba(22,0,46,0.92)',
+              border: '1px solid rgba(224,170,255,0.3)',
               color: '#fff', fontSize: '0.78rem', fontWeight: 600,
               cursor: 'pointer', backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
-              boxShadow: '0 4px 18px rgba(0,0,0,0.4)',
+              boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
               fontFamily: 'inherit', whiteSpace: 'nowrap',
             }}
           >
-            <span style={{ fontSize: '1.1rem' }}>{lang === 'it' ? '🇮🇹' : '🇬🇧'}</span>
-            <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>←</span>
+            <span style={{ fontSize: '1.15rem' }}>{lang === 'it' ? '🇮🇹' : '🇬🇧'}</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>←</span>
           </button>
 
           {langOpen && (
@@ -144,10 +139,10 @@ export default function MobileFloatingActions() {
               <div onClick={() => setLangOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: -1 }} />
               <div style={{
                 position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
-                background: 'rgba(22,0,46,0.95)', border: '1px solid rgba(224,170,255,0.22)',
+                background: 'rgba(22,0,46,0.97)', border: '1px solid rgba(224,170,255,0.22)',
                 borderRadius: 14, padding: '6px', display: 'flex', flexDirection: 'column', gap: 4,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)', zIndex: 991,
               }}>
                 {([['it', '🇮🇹', 'Italiano'], ['en', '🇬🇧', 'English']] as const).map(([code, flag, name]) => (
                   <button
@@ -167,14 +162,14 @@ export default function MobileFloatingActions() {
                   </button>
                 ))}
                 <button
-                  onClick={dismiss}
+                  onClick={dismissPill}
                   style={{
                     marginTop: 2, padding: '6px 14px', borderRadius: 10, border: 'none',
                     background: 'transparent', color: 'rgba(255,255,255,0.35)',
                     fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                   }}
                 >
-                  Rimuovi
+                  {tf.remove}
                 </button>
               </div>
             </>
@@ -182,13 +177,15 @@ export default function MobileFloatingActions() {
         </div>
       )}
 
-      {/* Gift icon → newsletter */}
-      {phase === 'gift' && (
+      {/* ── Regalo newsletter — appare sopra il pallino dopo 45s ── */}
+      {giftVisible && (
         <button
           onClick={() => setNlOpen(true)}
-          aria-label="Sorpresa"
+          aria-label={tf.gift}
           style={{
-            position: 'fixed', left: 14, bottom: BOTTOM, zIndex: 990,
+            position: 'fixed', left: 14,
+            bottom: pillDismissed ? BOTTOM : BOTTOM_GIFT,
+            zIndex: 990,
             width: 44, height: 44, borderRadius: '50%',
             background: 'linear-gradient(135deg, rgba(157,78,221,0.9), rgba(123,44,191,0.9))',
             border: '1px solid rgba(224,170,255,0.35)',
@@ -196,11 +193,12 @@ export default function MobileFloatingActions() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
-            boxShadow: '0 4px 18px rgba(157,78,221,0.45)',
+            boxShadow: '0 4px 18px rgba(157,78,221,0.5)',
             animation: 'giftPulse 2s ease-in-out infinite',
+            transition: 'bottom 0.3s ease',
           }}
         >
-          <style>{`@keyframes giftPulse { 0%,100% { box-shadow:0 4px 18px rgba(157,78,221,0.45); } 50% { box-shadow:0 4px 28px rgba(157,78,221,0.75), 0 0 0 6px rgba(157,78,221,0.12); } }`}</style>
+          <style>{`@keyframes giftPulse { 0%,100% { box-shadow:0 4px 18px rgba(157,78,221,0.5); } 50% { box-shadow:0 4px 28px rgba(157,78,221,0.8), 0 0 0 6px rgba(157,78,221,0.12); } }`}</style>
           🎁
         </button>
       )}
@@ -208,7 +206,7 @@ export default function MobileFloatingActions() {
       {nlOpen && (
         <NewsletterPopup
           forceOpen={nlOpen}
-          onForceClose={() => { setNlOpen(false); setPhase('gone'); setDismissed(true); }}
+          onForceClose={dismissGift}
         />
       )}
     </>

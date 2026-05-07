@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth, SignInButton } from '@clerk/nextjs';
+import { useLang } from '../../context/LanguageContext';
 import { DIFFICULTY_CONFIG, type Difficulty, getLeaderboard, saveScore } from '../../lib/quizData';
 
 const PURPLE = '#9d4edd';
@@ -31,6 +32,8 @@ type Phase = 'menu' | 'playing' | 'feedback' | 'results';
 
 export default function BandierePage() {
   const { isSignedIn } = useAuth();
+  const { t } = useLang();
+  const tg = t.games;
   const [phase, setPhase] = useState<Phase>('menu');
   const [diff, setDiff] = useState<Difficulty>('easy');
   const [rounds, setRounds] = useState<FlagRound[]>([]);
@@ -126,15 +129,15 @@ export default function BandierePage() {
   if (phase === 'menu') return (
     <main style={pageStyle}>
       <Link href="/giochi" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', textDecoration: 'none', marginBottom: '1.5rem' }}>
-        ← Giochi
+        {tg.back}
       </Link>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>🚩</div>
         <h1 style={{ fontSize: 'clamp(1.6rem,5vw,2.2rem)', fontWeight: 900, margin: '0 0 0.5rem', background: `linear-gradient(135deg,#fff,${PURPLE_LIGHT})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          Indovina la Bandiera
+          {tg.flagTitle}
         </h1>
         <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-          Vedi la bandiera, indovina il paese · 10 round · più veloce = più punti
+          {tg.flagSubtitle}
         </p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -151,10 +154,10 @@ export default function BandierePage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
                 <span style={{ fontSize: '1.4rem' }}>{c.emoji}</span>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{c.label}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{d === 'easy' ? tg.easy : d === 'medium' ? tg.medium : tg.hard}</div>
                   <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>
-                    {d === 'easy' ? 'Paesi famosi' : d === 'medium' ? 'Paesi meno noti' : 'Paesi rari'}
-                    {' · '}{c.points} pt · {c.time}s
+                    {d === 'easy' ? tg.easyHint : d === 'medium' ? tg.mediumHint : tg.hardHint}
+                    {' · '}{c.points} {tg.ptPerQ} · {c.time}{tg.secPerQ}
                   </div>
                 </div>
               </div>
@@ -177,21 +180,21 @@ export default function BandierePage() {
           <div style={{ fontSize: '4rem', marginBottom: '0.75rem' }}>{medal}</div>
           <h2 style={{ fontSize: 'clamp(1.4rem,5vw,2rem)', fontWeight: 900, margin: '0 0 0.3rem' }}>{score} punti</h2>
           <p style={{ color: 'rgba(255,255,255,0.5)', margin: '0 0 0.75rem' }}>{correct} su {rounds.length} corrette — {pct}%</p>
-          {saved && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>✅ Punteggio salvato in classifica!</div>}
+          {saved && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>{tg.saved}</div>}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem' }}>
           <button onClick={() => startGame(diff)} style={{ flex: 1, padding: '0.85rem', borderRadius: 14, background: `linear-gradient(135deg,${PURPLE},#7b2cbf)`, border: 'none', color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-            🔄 Rigioca
+            {tg.replay}
           </button>
           <button onClick={() => setPhase('menu')} style={{ flex: 1, padding: '0.85rem', borderRadius: 14, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-            🎯 Difficoltà
+            {tg.changeDiff}
           </button>
         </div>
         {!isSignedIn && (
           <div style={{ padding: '1rem 1.25rem', borderRadius: 16, background: 'rgba(157,78,221,0.1)', border: '1px solid rgba(157,78,221,0.3)', marginBottom: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Entra in classifica 🏆</div>
+            <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>{tg.loginTitle}</div>
             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)', margin: '0 0 0.25rem', lineHeight: 1.6 }}>
-              Crea un account gratuito per salvare il punteggio.
+              {tg.loginText}
             </p>
             <p style={{ fontSize: '0.82rem', margin: '0 0 0.85rem', lineHeight: 1.7 }}>
               <span style={{ color: 'rgba(255,255,255,0.5)' }}>Scala la classifica · Guadagna punti · Vinci premi, sconti, itinerari e… </span>
@@ -199,7 +202,7 @@ export default function BandierePage() {
             </p>
             <SignInButton mode="modal">
               <button style={{ padding: '0.7rem 1.8rem', borderRadius: 999, background: `linear-gradient(135deg,${PURPLE},#7b2cbf)`, border: 'none', color: '#fff', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-                🔑 Accedi / Registrati
+                {tg.signIn}
               </button>
             </SignInButton>
           </div>
@@ -207,7 +210,7 @@ export default function BandierePage() {
         {board.length > 0 && (
           <div>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-              📱 I tuoi punteggi
+              {tg.myScores}
             </div>
             {board.map((e, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.75rem', borderRadius: 10, marginBottom: '0.3rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -222,7 +225,7 @@ export default function BandierePage() {
   }
 
   // ── PLAYING / FEEDBACK ──────────────────────────────────────────────────
-  if (!round) return <main style={pageStyle}><div style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.4)' }}>Caricamento…</div></main>;
+  if (!round) return <main style={pageStyle}><div style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.4)' }}>{tg.flagLoading}</div></main>;
 
   return (
     <main style={pageStyle}>
@@ -247,7 +250,7 @@ export default function BandierePage() {
           {round.flag}
         </div>
         <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.75rem' }}>
-          Di quale paese è questa bandiera?
+          {tg.whichCountry}
         </p>
       </div>
 
