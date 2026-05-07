@@ -187,6 +187,8 @@ export default function HomeSearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [relaxedDirect, setRelaxedDirect] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [stopsFilter, setStopsFilter] = useState<'all' | '0' | '1' | '2' | '2+'>('all');
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   const [mode, setMode] = useState<'classic' | 'ai'>('classic');
 
@@ -199,6 +201,8 @@ export default function HomeSearch() {
     setError(null);
     setFlights([]);
     setPage(1);
+    setSortOrder('asc');
+    setStopsFilter('all');
     setRelaxedDirect(false);
 
     try {
@@ -403,12 +407,12 @@ export default function HomeSearch() {
 
                   {/* Flex giorni — solo in modalità notti */}
                   {isFormExpanded && useNights && (
-                    <div className={styles.compactInputItem} style={{ flex: '0 0 auto' }}>
+                    <div className={styles.compactInputItem}>
                       <select
                         value={departFlex}
                         onChange={(e) => setDepartFlex(Number(e.target.value))}
                         aria-label="Flessibilità partenza"
-                        style={{ background: 'transparent', border: 'none', outline: 'none', color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', cursor: 'pointer', padding: '0.6rem 0.4rem' }}
+                        style={{ background: 'transparent', border: 'none', outline: 'none', color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', cursor: 'pointer', padding: '0.6rem 1rem', width: '100%' }}
                       >
                         {[0,1,2,3].map(d => (
                           <option key={d} value={d} style={{ background: '#1a0035' }}>{d === 0 ? 'Data esatta' : `±${d} gg`}</option>
@@ -566,28 +570,92 @@ export default function HomeSearch() {
         {!isLoading && hasSearched && !error && (
           <section className={`${styles.resultsList} animate-fade-in delay-200`}>
             {flights.length > 0 ? (() => {
+              // ── Filtro scali ──
+              const filtered = stopsFilter === 'all' ? flights : flights.filter(f => {
+                const s = f.stops_out;
+                if (stopsFilter === '0') return s === 0;
+                if (stopsFilter === '1') return s === 1;
+                if (stopsFilter === '2') return s === 2;
+                return s >= 2; // '2+'
+              });
+
+              // ── Ordina per prezzo ──
+              const displayFlights = [...filtered].sort((a, b) =>
+                sortOrder === 'asc' ? a.price - b.price : b.price - a.price
+              );
+
+              const chipBase: React.CSSProperties = {
+                padding: '0.3rem 0.75rem', borderRadius: '999px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem',
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s',
+              };
+              const chipActive: React.CSSProperties = {
+                ...chipBase,
+                background: 'rgba(157,78,221,0.22)',
+                border: '1px solid rgba(157,78,221,0.55)',
+                color: '#c77dff', fontWeight: 700,
+              };
+
               const PER_PAGE = 10;
-              const totalPages = Math.ceil(flights.length / PER_PAGE);
-              const visible = flights.slice(0, page * PER_PAGE);
+              const totalPages = Math.ceil(displayFlights.length / PER_PAGE);
+              const visible = displayFlights.slice(0, page * PER_PAGE);
+
               return (
                 <>
-                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '0.75rem' }}>
-                    {visible.length} di {flights.length} voli
-                  </div>
-                  {visible.map((flight, i) => <FlightCardItem key={`${flight.id}-${i}`} flight={flight} />)}
-                  {page < totalPages && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
-                      <button
-                        onClick={() => setPage(p => p + 1)}
-                        style={{
-                          padding: '0.7rem 2rem', borderRadius: '999px',
-                          background: 'rgba(157,78,221,0.2)', border: '1px solid rgba(157,78,221,0.45)',
-                          color: '#c77dff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
-                        }}
-                      >
-                        Carica altri voli ({flights.length - visible.length} rimanenti)
+                  {/* ── Barra filtri ── */}
+                  <div style={{
+                    display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center',
+                    marginBottom: '1rem', padding: '0.7rem 0.9rem',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)',
+                  }}>
+                    {/* Sort */}
+                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.38)', whiteSpace: 'nowrap' }}>Ordina:</span>
+                    <button style={sortOrder === 'asc' ? chipActive : chipBase} onClick={() => { setSortOrder('asc'); setPage(1); }}>Prezzo ↑</button>
+                    <button style={sortOrder === 'desc' ? chipActive : chipBase} onClick={() => { setSortOrder('desc'); setPage(1); }}>Prezzo ↓</button>
+
+                    <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', margin: '0 0.1rem' }} />
+
+                    {/* Stops filter */}
+                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.38)', whiteSpace: 'nowrap' }}>Scali:</span>
+                    {(['all', '0', '1', '2', '2+'] as const).map(s => (
+                      <button key={s} style={stopsFilter === s ? chipActive : chipBase} onClick={() => { setStopsFilter(s); setPage(1); }}>
+                        {s === 'all' ? 'Tutti' : s === '0' ? 'Nessuno' : s === '1' ? '1 scalo' : s === '2' ? '2 scali' : '2+ scali'}
                       </button>
+                    ))}
+                  </div>
+
+                  {/* ── Contatore ── */}
+                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: '0.75rem' }}>
+                    {displayFlights.length === 0
+                      ? 'Nessun volo con questo filtro'
+                      : `${visible.length} di ${displayFlights.length} voli`}
+                  </div>
+
+                  {displayFlights.length === 0 ? (
+                    <div className={styles.emptyState} style={{ padding: '1.5rem' }}>
+                      Nessun risultato per i filtri selezionati. Prova a cambiare gli scali o ordina diversamente.
                     </div>
+                  ) : (
+                    <>
+                      {visible.map((flight, i) => <FlightCardItem key={`${flight.id}-${i}`} flight={flight} />)}
+                      {page < totalPages && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
+                          <button
+                            onClick={() => setPage(p => p + 1)}
+                            style={{
+                              padding: '0.7rem 2rem', borderRadius: '999px',
+                              background: 'rgba(157,78,221,0.2)', border: '1px solid rgba(157,78,221,0.45)',
+                              color: '#c77dff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+                            }}
+                          >
+                            Carica altri voli ({displayFlights.length - visible.length} rimanenti)
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               );

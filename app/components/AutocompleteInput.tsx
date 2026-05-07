@@ -143,14 +143,14 @@ export default function AutocompleteInput({
           value={query}
           onChange={handleInputChange}
           onFocus={() => {
-            if (suggestions.length > 0 || (allowAnywhere && query.length >= 1)) setIsOpen(true);
+            if (suggestions.length > 0 || (allowAnywhere && query.length === 0)) setIsOpen(true);
           }}
           required={required}
           autoComplete="off"
         />
-        {isOpen && (suggestions.length > 0 || (allowAnywhere && query.length >= 1)) && (
+        {isOpen && (suggestions.length > 0 || (allowAnywhere && query.length === 0)) && (
           <div className={styles.dropdownList}>
-            {allowAnywhere && query.length >= 1 && ANYWHERE_OPTIONS.map((opt) => (
+            {allowAnywhere && query.length === 0 && ANYWHERE_OPTIONS.map((opt) => (
               <div
                 key={opt.code}
                 className={styles.dropdownItem}

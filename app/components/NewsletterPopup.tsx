@@ -3,11 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 
-export default function NewsletterPopup() {
+export default function NewsletterPopup({ forceOpen, onForceClose }: { forceOpen?: boolean; onForceClose?: () => void } = {}) {
   const { t } = useLang();
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (forceOpen) setVisible(true);
+  }, [forceOpen]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('tit_nl_dismissed')) return;
@@ -36,6 +40,7 @@ export default function NewsletterPopup() {
   const close = () => {
     if (typeof window !== 'undefined') sessionStorage.setItem('tit_nl_dismissed', '1');
     setVisible(false);
+    onForceClose?.();
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -272,6 +272,7 @@ function computeKiwiDates(params: SearchParams): { depDate: string; depFlex: num
   let depFlex = 0;
   if (params.isSpecificDate && params.exactDepartDate) {
     depDate = params.exactDepartDate;
+    depFlex = Math.min(3, Math.max(0, params.departFlex));
   } else if (params.flexDepartStart && params.flexDepartEnd) {
     depDate = middleDate(params.flexDepartStart, params.flexDepartEnd);
     const span = daysBetween(params.flexDepartStart, params.flexDepartEnd);

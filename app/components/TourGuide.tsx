@@ -310,17 +310,20 @@ export default function TourGuide({ onExpandForm, onActivateNotti, onDeactivateN
     content = (
       <div
         onClick={(e) => e.stopPropagation()}
-        onTouchMove={(e) => e.preventDefault()}
         style={{
           position: 'fixed', inset: 0, zIndex: 12000,
           backgroundColor: exiting ? 'transparent' : 'rgba(0,0,0,0.96)',
           display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: '3rem',
+          alignItems: 'center', justifyContent: 'flex-start',
+          overflowY: 'auto',
+          gap: 'clamp(0.75rem, 3vh, 3rem)',
+          paddingTop: 'max(1.5rem, calc((100dvh - 530px) / 2))',
+          paddingBottom: '1.5rem',
+          paddingLeft: '1.5rem',
+          paddingRight: '1.5rem',
           transition: exiting ? 'background-color 0.7s ease 0.5s' : 'none',
           pointerEvents: exiting ? 'none' : 'all',
-          padding: '1.5rem',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
         }}
       >
         <style>{`
@@ -413,16 +416,30 @@ export default function TourGuide({ onExpandForm, onActivateNotti, onDeactivateN
         .tour-exit-text { animation: tourExitText 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
         .tour-exit-globe { animation: tourExitGlobe 1.3s ease-in forwards; }
         .tour-exit-actions { animation: tourExitBtnZoom 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
+
+        /* Schermi bassi (landscape mobile, tablet orizzontale) */
+        @media (max-height: 580px) {
+          .tour-welcome-globe-wrapper { display: none !important; }
+          .tour-welcome-pre { display: none !important; }
+          .tour-welcome-title { font-size: clamp(1.6rem, 6vw, 2.5rem) !important; }
+          .tour-welcome-sub { font-size: 0.82rem !important; padding: 0 !important; }
+          .tour-welcome-btn { padding: 0.75rem 2rem !important; font-size: 1rem !important; }
+        }
+        /* Schermi stretti < 380px */
+        @media (max-width: 380px) {
+          .tour-welcome-title { font-size: clamp(2rem, 10vw, 3rem) !important; }
+          .tour-welcome-btn { padding: 0.9rem 2rem !important; font-size: 1rem !important; }
+        }
         `}</style>
 
         <div className="tour-bg-glow" style={{ opacity: exiting ? 0 : 1, transition: exiting ? 'opacity 0.5s ease' : 'none' }} />
 
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '800px' }}>
-          <div className={exiting ? 'tour-exit-globe' : ''} style={{ zIndex: 3, position: 'relative' }}>
+          <div className={`tour-welcome-globe-wrapper${exiting ? ' tour-exit-globe' : ''}`} style={{ zIndex: 3, position: 'relative' }}>
             <GlobeLoader />
           </div>
           
-          <div className={exiting ? 'tour-exit-text' : ''} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.2rem', marginTop: '1.2rem' }}>
+          <div className={exiting ? 'tour-exit-text' : ''} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(0.5rem, 2vh, 1.2rem)', marginTop: 'clamp(0.5rem, 2vh, 1.2rem)' }}>
             <p className="tour-welcome-pre">Tour interattivo</p>
             <h1 className="tour-welcome-title">
               BENVENUTO IN<br />

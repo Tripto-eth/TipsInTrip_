@@ -697,7 +697,7 @@
 }
 
 .heroHeadline {
-  font-size: clamp(2.4rem, 5.6vw, 4.5rem);
+  font-size: clamp(1.65rem, 5.6vw, 4.5rem);
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.025em;
@@ -706,7 +706,7 @@
 }
 
 .heroDesc {
-  font-size: 1.05rem;
+  font-size: clamp(0.88rem, 2.2vw, 1.05rem);
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.72);
   margin: 0;
@@ -806,7 +806,28 @@
   .heroBadgeAi, .heroBadgeGlobe { font-size: 0.75rem; padding: 0.4rem 0.8rem; }
   .heroGrid { padding: 1rem 1rem 0; gap: 1.5rem; }
   .heroLeft { gap: 1rem; }
-  .heroDesc { font-size: 0.95rem; }
+  .heroDesc { font-size: 0.9rem; }
+  .heroCenterLogo { padding: 0.25rem 0 0.75rem; }
+}
+
+/* Schermi molto stretti < 380px (es. iPhone SE, vecchi Android) */
+@media (max-width: 380px) {
+  .heroGrid { padding: 0.75rem 0.75rem 0; }
+  .heroHeadline { font-size: clamp(1.5rem, 8vw, 2rem); }
+  .searchClassicBox { padding: 1rem; border-radius: 14px; }
+  .searchCompactBar { border-radius: 12px; }
+  .segmentBtn { font-size: 0.78rem; padding: 0.5rem 0; }
+}
+
+/* Landscape mobile — schermi bassi */
+@media (max-height: 500px) and (max-width: 900px) {
+  .heroSection { padding: 0.25rem 0 1rem; }
+  .heroCenterLogo { display: none; }
+  .heroHeadline { font-size: clamp(1.2rem, 4vw, 2rem); }
+  .heroDesc { display: none; }
+  .heroGrid { padding: 0.5rem 1rem 0; }
+  .heroLeft { gap: 0.5rem; }
+  .modeSwitcher { margin: 0; }
 }
 
 .heroTitle {
@@ -898,7 +919,7 @@
 .searchFormClassic {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
 }
 
 .searchRow {
