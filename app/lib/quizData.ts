@@ -81,11 +81,12 @@ export interface ScoreEntry {
   date: string;
 }
 
-export type Game = 'quiz' | 'flags';
+export type Game = 'quiz' | 'flags' | 'emoji';
 
 const LS_KEYS: Record<Game, string> = {
-  quiz: 'tit_quiz_scores',
+  quiz:  'tit_quiz_scores',
   flags: 'tit_flags_scores',
+  emoji: 'tit_emoji_scores',
 };
 
 export function getLeaderboard(game: Game = 'quiz'): ScoreEntry[] {

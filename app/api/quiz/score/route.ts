@@ -10,6 +10,8 @@ const redis = new Redis({
 const lbKey = (game: string) => `lb:${game}`;
 const playerKey = (game: string, userId: string) => `player:${game}:${userId}`;
 
+const ALL_GAMES = ['quiz', 'flags', 'emoji'];
+
 export interface LeaderboardEntry {
   userId: string;
   name: string;
@@ -18,32 +20,54 @@ export interface LeaderboardEntry {
   total: number;
   diff: string;
   date: string;
+  game?: string;
 }
 
-// GET — top 20 global leaderboard
+function maskName(raw: string): string {
+  const local = raw.includes('@') ? raw.split('@')[0] : raw;
+  if (local.length <= 2) return local[0] + '***';
+  return local[0] + '*'.repeat(Math.min(local.length - 2, 5)) + local[local.length - 1];
+}
+
+async function fetchGame(game: string, limit: number, isAdmin: boolean): Promise<LeaderboardEntry[]> {
+  const rows = await redis.zrange(lbKey(game), 0, limit - 1, { rev: true, withScores: true });
+  const entries: LeaderboardEntry[] = [];
+  for (let i = 0; i < rows.length; i += 2) {
+    const userId = rows[i] as string;
+    const score = Number(rows[i + 1]);
+    const data = await redis.hgetall(playerKey(game, userId)) as Record<string, string> | null;
+    if (data) {
+      const rawName = data.name || 'Giocatore';
+      entries.push({
+        userId,
+        name: isAdmin ? rawName : maskName(rawName),
+        score,
+        correct: Number(data.correct ?? 0),
+        total: Number(data.total ?? 10),
+        diff: data.diff || 'easy',
+        date: data.date || '',
+        game,
+      });
+    }
+  }
+  return entries;
+}
+
+// GET — leaderboard (game=quiz|flags|emoji|all)
 export async function GET(request: Request) {
   try {
-    const game = new URL(request.url).searchParams.get('game') ?? 'quiz';
-    const rows = await redis.zrange(lbKey(game), 0, 19, { rev: true, withScores: true });
-    const entries: LeaderboardEntry[] = [];
+    const { userId: viewerId } = await auth();
+    const isAdmin = !!viewerId && viewerId === process.env.ADMIN_CLERK_USER_ID;
 
-    for (let i = 0; i < rows.length; i += 2) {
-      const userId = rows[i] as string;
-      const score = Number(rows[i + 1]);
-      const data = await redis.hgetall(playerKey(game, userId)) as Record<string, string> | null;
-      if (data) {
-        entries.push({
-          userId,
-          name: data.name || 'Giocatore',
-          score,
-          correct: Number(data.correct ?? 0),
-          total: Number(data.total ?? 10),
-          diff: data.diff || 'easy',
-          date: data.date || '',
-        });
-      }
+    const game = new URL(request.url).searchParams.get('game') ?? 'quiz';
+
+    if (game === 'all') {
+      const results = await Promise.all(ALL_GAMES.map(g => fetchGame(g, 10, isAdmin)));
+      const combined = results.flat().sort((a, b) => b.score - a.score).slice(0, 30);
+      return NextResponse.json({ data: combined });
     }
 
+    const entries = await fetchGame(game, 20, isAdmin);
     return NextResponse.json({ data: entries });
   } catch (err) {
     console.error('[quiz/score GET]', err);
