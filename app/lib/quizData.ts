@@ -81,17 +81,22 @@ export interface ScoreEntry {
   date: string;
 }
 
-const LS_KEY = 'tit_quiz_scores';
+export type Game = 'quiz' | 'flags';
 
-export function getLeaderboard(): ScoreEntry[] {
+const LS_KEYS: Record<Game, string> = {
+  quiz: 'tit_quiz_scores',
+  flags: 'tit_flags_scores',
+};
+
+export function getLeaderboard(game: Game = 'quiz'): ScoreEntry[] {
   if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(LS_KEYS[game]) || '[]'); } catch { return []; }
 }
 
-export function saveScore(entry: ScoreEntry) {
+export function saveScore(entry: ScoreEntry, game: Game = 'quiz') {
   if (typeof window === 'undefined') return;
-  const board = getLeaderboard();
+  const board = getLeaderboard(game);
   board.push(entry);
   board.sort((a, b) => b.score - a.score);
-  localStorage.setItem(LS_KEY, JSON.stringify(board.slice(0, 20)));
+  localStorage.setItem(LS_KEYS[game], JSON.stringify(board.slice(0, 20)));
 }

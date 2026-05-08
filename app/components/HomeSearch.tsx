@@ -31,8 +31,6 @@ interface Flight {
 }
 
 function FlightCardItem({ flight }: { flight: Flight }) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const formatDateStr = (iso: string) => {
     if (!iso) return '';
     const [y, m, d] = iso.split('-').map(Number);
@@ -45,7 +43,14 @@ function FlightCardItem({ flight }: { flight: Flight }) {
   return (
     <div className={styles.flightCard}>
       <div className={styles.flightMain}>
-        <div className={styles.routeLocations}>{flight.route}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div className={styles.routeLocations}>{flight.route}</div>
+          {flight.airline && (
+            <span style={{ fontSize: '0.75rem', color: 'rgba(199,125,255,0.75)', fontWeight: 500 }}>
+              {flight.airline}
+            </span>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: '1rem', margin: '0.75rem 0', flexWrap: 'wrap' }}>
           <div style={{
@@ -74,34 +79,6 @@ function FlightCardItem({ flight }: { flight: Flight }) {
               <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{formatDateStr(flight.return_date)}</div>
               <div style={{ fontSize: '0.72rem', opacity: 0.65, marginTop: '0.2rem' }}>
                 {flight.duration_back_str || '—'} · {stopsLabel(flight.stops_back)}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className={styles.flightDetailsAccordion}>
-          <button className={styles.detailsToggle} onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? t.results.hideDetails : t.results.showDetails} {isOpen ? '▲' : '▼'}
-          </button>
-
-          {isOpen && (
-            <div className={styles.detailsContent}>
-              <div className={styles.detailRow}>
-                <span>{t.results.exactTimes}</span>
-                <span style={{ color: 'orange' }}>{t.results.timesNote}</span>
-              </div>
-              <div className={styles.detailRow}>
-                <span>{t.results.exactAirports}</span>
-                <span style={{ color: 'orange' }}>{t.results.airportsNote}</span>
-              </div>
-              {flight.isRoundTrip && (
-                <div className={styles.detailRow}>
-                  <span>{t.results.priceType}</span>
-                  <span>{t.results.priceTypeNote}</span>
-                </div>
-              )}
-              <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                {t.results.clickNote}
               </div>
             </div>
           )}

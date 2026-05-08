@@ -1426,48 +1426,6 @@
   color: var(--text-muted);
 }
 
-.flightDetailsAccordion {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-  animation: fadeIn 0.3s ease;
-}
-
-.detailsToggle {
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: color 0.2s;
-}
-
-.detailsToggle:hover {
-  text-decoration: underline;
-}
-
-.detailsContent {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  font-size: 0.875rem;
-  color: var(--text-muted);
-}
-
-.detailRow {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.detailRow:last-child {
-  margin-bottom: 0;
-}
 
 @media (max-width: 767px) {
   .segmentBtn {

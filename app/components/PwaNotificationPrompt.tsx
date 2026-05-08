@@ -8,7 +8,6 @@ export default function PwaNotificationPrompt() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Solo in modalità standalone (app sulla home)
     const isStandalone =
       ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone === true) ||
       window.matchMedia('(display-mode: standalone)').matches;
@@ -18,9 +17,22 @@ export default function PwaNotificationPrompt() {
     if (Notification.permission === 'granted') return;
     if (localStorage.getItem(STORAGE_KEY)) return;
 
-    // Mostra dopo 4 secondi per non essere invasivo all'apertura
-    const t = setTimeout(() => setVisible(true), 10000);
-    return () => clearTimeout(t);
+    const show = () => setVisible(true);
+
+    // Se il tutorial è già stato completato in una sessione precedente, mostra dopo 10s
+    if (localStorage.getItem('tipsintrip-tour-done')) {
+      const t = setTimeout(show, 10000);
+      return () => clearTimeout(t);
+    }
+
+    // Altrimenti aspetta la fine del tutorial, poi mostra dopo 3s
+    let t: ReturnType<typeof setTimeout>;
+    const onTutorialFinished = () => { t = setTimeout(show, 3000); };
+    window.addEventListener('tutorial-finished', onTutorialFinished);
+    return () => {
+      window.removeEventListener('tutorial-finished', onTutorialFinished);
+      clearTimeout(t);
+    };
   }, []);
 
   const dismiss = () => {

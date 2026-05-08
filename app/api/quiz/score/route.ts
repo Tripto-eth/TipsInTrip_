@@ -7,8 +7,8 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-const LB_KEY = 'quiz:leaderboard';
-const PLAYER_PREFIX = 'quiz:player:';
+const lbKey = (game: string) => `lb:${game}`;
+const playerKey = (game: string, userId: string) => `player:${game}:${userId}`;
 
 export interface LeaderboardEntry {
   userId: string;
@@ -21,16 +21,16 @@ export interface LeaderboardEntry {
 }
 
 // GET — top 20 global leaderboard
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Get top 20 by score (descending)
-    const rows = await redis.zrange(LB_KEY, 0, 19, { rev: true, withScores: true });
+    const game = new URL(request.url).searchParams.get('game') ?? 'quiz';
+    const rows = await redis.zrange(lbKey(game), 0, 19, { rev: true, withScores: true });
     const entries: LeaderboardEntry[] = [];
 
     for (let i = 0; i < rows.length; i += 2) {
       const userId = rows[i] as string;
       const score = Number(rows[i + 1]);
-      const data = await redis.hgetall(`${PLAYER_PREFIX}${userId}`) as Record<string, string> | null;
+      const data = await redis.hgetall(playerKey(game, userId)) as Record<string, string> | null;
       if (data) {
         entries.push({
           userId,
@@ -57,19 +57,17 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
 
-    const { score, correct, total, diff } = await request.json();
+    const { score, correct, total, diff, game = 'quiz' } = await request.json();
     if (typeof score !== 'number') return NextResponse.json({ error: 'Dati non validi' }, { status: 400 });
 
-    // Get user display name from Clerk
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
     const name = user.firstName || user.username || user.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'Giocatore';
 
-    // Save best score only (only update if new score is higher)
-    const current = await redis.zscore(LB_KEY, userId);
+    const current = await redis.zscore(lbKey(game), userId);
     if (current === null || score > Number(current)) {
-      await redis.zadd(LB_KEY, { score, member: userId });
-      await redis.hset(`${PLAYER_PREFIX}${userId}`, {
+      await redis.zadd(lbKey(game), { score, member: userId });
+      await redis.hset(playerKey(game, userId), {
         name,
         correct: String(correct),
         total: String(total),

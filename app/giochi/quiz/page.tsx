@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth, SignInButton } from '@clerk/nextjs';
 import { useLang } from '../../context/LanguageContext';
 import {
-  type Difficulty, type QuizQuestion,
+  type Difficulty, type QuizQuestion, type Game,
   DIFFICULTY_CONFIG, getLeaderboard, saveScore, type ScoreEntry,
 } from '../../lib/quizData';
 import type { LeaderboardEntry } from '../../api/quiz/score/route';
@@ -36,14 +36,14 @@ function DiffBadge({ diff }: { diff: string }) {
   );
 }
 
-function GlobalLeaderboard() {
+function GlobalLeaderboard({ game }: { game: Game }) {
   const { t } = useLang();
   const tg = t.games;
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/quiz/score')
+    fetch(`/api/quiz/score?game=${game}`)
       .then(r => r.json())
       .then(d => setEntries(d.data || []))
       .catch(() => {})
@@ -146,15 +146,15 @@ export default function QuizPage() {
   useEffect(() => {
     if (phase !== 'results') return;
     const entry: ScoreEntry = { score, correct, total: questions.length, diff, date: new Date().toISOString() };
-    saveScore(entry);
-    setLocalBoard(getLeaderboard());
+    saveScore(entry, 'quiz');
+    setLocalBoard(getLeaderboard('quiz'));
 
     if (isSignedIn && !saved) {
       setSaving(true);
       fetch('/api/quiz/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score, correct, total: questions.length, diff }),
+        body: JSON.stringify({ score, correct, total: questions.length, diff, game: 'quiz' }),
       })
         .then(() => setSaved(true))
         .catch(() => {})
@@ -228,7 +228,7 @@ export default function QuizPage() {
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
             {tg.leaderboardTitle}
           </div>
-          <GlobalLeaderboard />
+          <GlobalLeaderboard game="quiz" />
         </div>
       </main>
     );
@@ -297,7 +297,7 @@ export default function QuizPage() {
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
             {tg.globalLb}
           </div>
-          <GlobalLeaderboard />
+          <GlobalLeaderboard game="quiz" />
         </div>
       </main>
     );
