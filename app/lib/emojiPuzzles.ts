@@ -146,14 +146,18 @@ export const EMOJI_PUZZLES: EmojiPuzzle[] = [
 export function getEmojiRound(diff: Difficulty, count = 10): EmojiRound[] {
   const pool = EMOJI_PUZZLES.filter(p => p.diff === diff);
   const selected = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(count, pool.length));
-  const allAnswers = [...new Set(pool.map(p => p.answer))];
 
   return selected.map(puzzle => {
-    const wrongs = allAnswers
-      .filter(a => a !== puzzle.answer)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+    // Distrattori dalla stessa categoria — stessa diff prima, poi tutte le diff se non bastano
+    const sameDiff = [...new Set(
+      pool.filter(p => p.category === puzzle.category && p.answer !== puzzle.answer).map(p => p.answer)
+    )];
+    const anyDiff = [...new Set(
+      EMOJI_PUZZLES.filter(p => p.category === puzzle.category && p.answer !== puzzle.answer).map(p => p.answer)
+    )];
+    const candidates = sameDiff.length >= 3 ? sameDiff : anyDiff;
 
+    const wrongs = candidates.sort(() => Math.random() - 0.5).slice(0, 3);
     const all = [...wrongs, puzzle.answer].sort(() => Math.random() - 0.5);
     const a = all.indexOf(puzzle.answer) as 0 | 1 | 2 | 3;
 

@@ -100,6 +100,19 @@ function dateOnly(iso: string): string {
   return iso ? iso.split('T')[0] : '';
 }
 
+// Sovrascrive l'affilid nel link che arriva dal server MCP di alpic con il nostro
+function injectAffiliate(url: string): string {
+  const affilid = process.env.KIWI_AFFILIATE_ID;
+  if (!affilid || !url) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('affilid', affilid);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 function buildAffiliateDeepLink(
   outbound: CleanLeg,
   ret: CleanLeg | undefined,
@@ -126,7 +139,7 @@ function cleanOne(raw: RawFlight, passengers?: KiwiSearchArgs['passengers']): Cl
     return: ret,
     price: num(raw.price),
     currency: str(raw.currency, 'EUR'),
-    deepLink: str(raw.deepLink) || buildAffiliateDeepLink(outbound, ret, passengers),
+    deepLink: injectAffiliate(str(raw.deepLink)) || buildAffiliateDeepLink(outbound, ret, passengers),
   };
 }
 

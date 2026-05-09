@@ -173,8 +173,8 @@ export default function AutocompleteInput({
                 <span className={styles.iataCode}>ANY</span>
               </div>
             ))}
-            {suggestions.map((place) => (
-              <div key={place.code} className={styles.dropdownItem} onClick={() => handleSelect(place)}>
+            {suggestions.map((place, i) => (
+              <div key={`${place.code}-${place.type}-${i}`} className={styles.dropdownItem} onClick={() => handleSelect(place)}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span className={styles.cityName}>{place.name}</span>
                   <span className={styles.countryName} style={{ fontSize: '0.75rem', opacity: 0.7 }}>

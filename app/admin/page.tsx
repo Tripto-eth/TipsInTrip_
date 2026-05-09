@@ -445,6 +445,9 @@ export default function AdminPage() {
           )}
         </div>
 
+        {/* ── RISPOSTA CORINNE ── */}
+        <RegaloDomanda secret={secret} />
+
         {/* ── SEZIONE NOTIFICHE PUSH ── */}
         <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem' }}>🔔 Invia Notifica Push</h2>
@@ -927,6 +930,57 @@ const emptyDest: DestForm = {
   flightPrice: '', hotelPerNight: '60', itineraryCost: '3', tags: 'Cultura, Relax',
   featured: false, perche: '', voliInfo: '', dormire: '', nonPerdere: '', quandoAndare: '', itinerario: '',
 };
+
+// ── Risposta Corinne (domanda aperta regalo) ──────────────────
+function RegaloDomanda({ secret }: { secret: string }) {
+  const [answer, setAnswer] = useState<string | null>(undefined as unknown as string | null);
+  const [loading, setLoading] = useState(false);
+
+  const fetch_ = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/regalo', { headers: { 'x-admin-secret': secret } });
+      const d = await res.json();
+      setAnswer(d.answer ?? null);
+    } catch {
+      setAnswer(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetch_(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(180,50,90,0.08)', border: '1px solid rgba(200,80,120,0.25)', borderRadius: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>💌 Risposta di Corinne</h2>
+          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', margin: '0.2rem 0 0' }}>
+            "Cosa non sopporti di me?" — domanda 3 del quiz regalo
+          </p>
+        </div>
+        <button onClick={fetch_} disabled={loading} style={{ ...btnStyle, padding: '0.4rem 1rem' }}>
+          {loading ? '...' : '🔄 Aggiorna'}
+        </button>
+      </div>
+
+      {answer === (undefined as unknown as string | null) || loading ? (
+        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', margin: 0 }}>Caricamento...</p>
+      ) : answer === null ? (
+        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', margin: 0 }}>
+          Nessuna risposta ancora — Corinne non ha ancora aperto il regalo.
+        </p>
+      ) : (
+        <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,80,120,0.2)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
+          <p style={{ fontSize: '0.95rem', lineHeight: 1.7, margin: 0, color: '#fff', fontStyle: 'italic' }}>
+            &ldquo;{answer}&rdquo;
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function DestinazioneEditor({ secret }: { secret: string }) {
   const [form, setForm] = useState<DestForm>(emptyDest);
