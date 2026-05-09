@@ -167,6 +167,23 @@ function AccountDrawer({ onClose }: { onClose: () => void }) {
               <Link href="/chat" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', textDecoration: 'none', fontSize: '0.88rem' }}>
                 {ta.aiChat}
               </Link>
+              {/* Regalo speciale — visibile per Corinne e per l'admin */}
+              {(user?.id === process.env.NEXT_PUBLIC_CORINNE_CLERK_USER_ID ||
+                user?.id === process.env.NEXT_PUBLIC_ADMIN_CLERK_USER_ID) && (
+                <Link
+                  href="/regalo-corinne"
+                  onClick={onClose}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.65rem',
+                    padding: '0.75rem 1rem', borderRadius: 12,
+                    background: 'linear-gradient(135deg, rgba(196,80,122,0.18), rgba(138,42,80,0.18))',
+                    border: '1px solid rgba(196,80,122,0.4)',
+                    color: '#ffb0c8', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600,
+                  }}
+                >
+                  🎁 Hai un regalo!
+                </Link>
+              )}
             </div>
 
             <SignOutButton>
