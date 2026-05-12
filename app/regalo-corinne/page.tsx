@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 type Phase = 'idle' | 'opening' | 'open';
-type LPage = 'welcome' | 'redpill' | 'intro' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'letter' | 'ticket';
+type LPage = 'welcome' | 'redpill' | 'intro' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'letter' | 'rayban' | 'ticket' | 'hotel';
 
 const ROSE   = '#8a3555';
 const CREAM  = '#3a2028';
@@ -296,12 +296,6 @@ export default function RegaloCorinne() {
           <p style={{ color: CREAM, fontSize: '0.83rem', lineHeight: 1.85, marginBottom: '0.6rem' }}>
             Sai anche come la penso sui regali: odio comprare oggetti fisici, quelli che prima o poi si rompono, passano di moda o finiscono a prendere polvere su una mensola. Preferisco di gran lunga regalarti qualcosa che ci rimarrà in testa per tutta la vita. Voglio regalarti dei ricordi, delle avventure e delle esperienze da vivere fianco a fianco.
           </p>
-          <p style={{ color: CREAM, fontSize: '0.83rem', lineHeight: 1.85, marginBottom: '0.6rem' }}>
-            E qui arriviamo al momento clou del tuo gioco. Ti ho fatto scegliere alla cieca tra il Rosso e il Blu, e tu hai scelto il Rosso.
-          </p>
-          <p style={{ color: CREAM, fontSize: '0.83rem', lineHeight: 1.85, marginBottom: '0.7rem' }}>
-            Devi sapere che non era un colore a caso. Quel rosso è il colore principale della bandiera del posto in cui stiamo per andare... <strong style={{ color: ROSE }}>prepara la valigia, perché ti porto in Montenegro! 🇲🇪</strong>
-          </p>
           <p style={{ color: CREAM, fontSize: '0.83rem', lineHeight: 1.85, marginBottom: '0.7rem' }}>
             Non vedo l'ora di partire e di aggiungere questo nuovo capitolo alla nostra storia.
           </p>
@@ -314,7 +308,37 @@ export default function RegaloCorinne() {
             <span style={{ color:'#b8607a', fontSize:'0.85rem' }}>❧</span>
             <div style={{ flex:1, height:1, background:'linear-gradient(90deg,rgba(180,90,110,0.35),transparent)' }} />
           </div>
-          <button onClick={() => go('ticket')} style={{ ...nextBtn, flexShrink: 0 }}>Continua →</button>
+          <button onClick={() => go('rayban')} style={{ ...nextBtn, flexShrink: 0 }}>Continua →</button>
+        </div>
+      );
+
+      case 'rayban': return (
+        <div key={pageKey} style={{ ...pgBase, justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: '0.9rem' }}>
+          <div style={{ fontSize: '3rem' }}>🕶️</div>
+          <p style={{ color: ROSE, fontSize: '0.78rem', fontStyle: 'italic', margin: 0, letterSpacing: '0.05em' }}>
+            prima vediamo cosa hai perso
+          </p>
+          <div style={{
+            background: 'rgba(180,90,110,0.07)',
+            border: '1px solid rgba(180,90,110,0.2)',
+            borderRadius: 14, padding: '1rem 1.2rem', width: '100%',
+          }}>
+            <div style={{ fontSize: '1rem', marginBottom: '0.4rem', color: CREAM }}>
+              🕶️ <del style={{ opacity: 0.5 }}>Ray-Ban</del>
+            </div>
+            <p style={{ color: CREAM, fontSize: '0.84rem', lineHeight: 1.75, margin: 0 }}>
+              Gli occhiali Ray-Ban del cazzo che avremmo comprato domani pomeriggio.
+            </p>
+            <p style={{ color: ROSE, fontSize: '0.78rem', fontStyle: 'italic', margin: '0.5rem 0 0' }}>
+              Li compriamo in viaggio 😏
+            </p>
+            <p style={{ color: CREAM, fontSize: '0.84rem', lineHeight: 1.75, margin: '0.6rem 0 0', fontWeight: 600 }}>
+              Ora invece vediamo cos'hai ricevuto 👇
+            </p>
+          </div>
+          <button onClick={() => go('ticket')} style={{ ...nextBtn, width: '100%' }}>
+            Continua →
+          </button>
         </div>
       );
 
@@ -386,6 +410,68 @@ export default function RegaloCorinne() {
               <div style={{ gridColumn: '1 / -1' }}>
                 <div style={{ fontSize: '0.55rem', color: 'rgba(100,50,70,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Posto</div>
                 <div style={{ fontWeight: 700, fontSize: '0.82rem', color: CREAM }}>Al tuo fianco ♾️</div>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={() => go('hotel')} style={{ ...nextBtn, marginTop: '0.65rem', flexShrink: 0 }}>
+            Continua →
+          </button>
+        </div>
+      );
+
+      case 'hotel': return (
+        <div key={pageKey} style={{ ...pgBase }}>
+          {/* Hotel card */}
+          <div style={{
+            flex: 1, borderRadius: 14, overflow: 'hidden',
+            boxShadow: '0 6px 24px rgba(0,0,0,0.13)',
+            border: '1px solid rgba(180,90,110,0.18)',
+            display: 'flex', flexDirection: 'column',
+            background: 'linear-gradient(160deg, #fff9f0, #fff4e8)',
+          }}>
+            {/* Foto */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/676873210.jpg?k=b9116428ae9ce5ac7590dbae5b9123803d2d6eb88448f6343ac23f9dbf14a933&o="
+              alt="Azzurro Budva"
+              style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }}
+            />
+
+            {/* Info */}
+            <div style={{ padding: '0.75rem 0.9rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {/* Nome + stelle */}
+              <div>
+                <div style={{ fontWeight: 900, fontSize: '1rem', color: CREAM }}>Azzurro Budva</div>
+                <div style={{ color: '#c4a44a', fontSize: '0.85rem', letterSpacing: '0.05em' }}>★★★★</div>
+              </div>
+
+              {/* Camera */}
+              <div style={{ fontSize: '0.82rem', color: ROSE, fontStyle: 'italic', fontWeight: 600 }}>
+                Camera Matrimoniale con Terrazza 🌅
+              </div>
+
+              {/* Separatore */}
+              <div style={{ display: 'flex', alignItems: 'center', margin: '0.1rem -1px' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff9f0', border: '1px solid rgba(180,90,110,0.15)', flexShrink: 0, marginLeft: -5 }} />
+                <div style={{ flex: 1, borderTop: '1.5px dashed rgba(180,90,110,0.22)' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff9f0', border: '1px solid rgba(180,90,110,0.15)', flexShrink: 0, marginRight: -5 }} />
+              </div>
+
+              {/* Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.55rem', color: 'rgba(100,50,70,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Check-in</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: CREAM }}>30 Luglio</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.55rem', color: 'rgba(100,50,70,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Check-out</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: CREAM }}>4 Agosto</div>
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ fontSize: '0.55rem', color: 'rgba(100,50,70,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Durata</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.82rem', color: CREAM }}>5 notti 🌙</div>
+                </div>
               </div>
             </div>
           </div>
